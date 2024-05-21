@@ -16,3 +16,6 @@
 *.mpr.bak
 /vendorlib/temp/
 .DS_Store
+/cardano mendix plug-in.mpr.bak
+/cardano mendix plug-in.mpr.lock
+/nativemobile/builds/
