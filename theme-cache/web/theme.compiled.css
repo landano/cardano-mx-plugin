@@ -26739,4 +26739,46 @@ input[type=checkbox].three-state-checkbox + .control-label {
   pointer-events: none;
 }
 
+.toggle-container {
+  flex: 1;
+}
+
+.sidebar-footer {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 6px;
+}
+.sidebar-footer .profile {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 9px;
+  padding: 0;
+}
+.sidebar-footer .profile .card-image {
+  width: 40px;
+  height: 40px;
+}
+
+.mx-scrollcontainer-shrink .mx-icon-chevron-right {
+  transition: transform 0.5s ease;
+}
+.mx-scrollcontainer-shrink .sidebar-footer .profile-header {
+  display: none;
+}
+
+.mx-scrollcontainer-shrink.mx-scrollcontainer-open .mx-icon-chevron-right {
+  transform: rotate(180deg);
+  /* Rotate 180 degrees to mirror */
+}
+.mx-scrollcontainer-shrink.mx-scrollcontainer-open .sidebar-footer {
+  padding: 10px;
+}
+.mx-scrollcontainer-shrink.mx-scrollcontainer-open .sidebar-footer .profile-header {
+  display: contents;
+}
+
 /*# sourceMappingURL=theme.compiled.css.map */
