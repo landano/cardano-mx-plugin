@@ -74,8 +74,9 @@ public class JA_CreateAccountGenerateMnemonics_ extends CustomJavaAction<IMendix
 
 			return mnenomicWordMxObjects;
 		*/
+		IContext context = getContext();
 		Network selectedNetwork;
-		String networkString = this.CARDANONETWORK;//.length() > 0? this.CARDANONETWORK : (String) Core.getConfiguration().getConstantValue("CardanoWallet.CARDANO_NETWORK");
+		String networkString = this.Wallet.getCardanoNetwork().name();
 		networkString =  networkString.length() > 0 ? networkString: "mainnet";
 		if(networkString.equalsIgnoreCase("preprod")) {
 			selectedNetwork = Networks.preprod();
@@ -87,9 +88,30 @@ public class JA_CreateAccountGenerateMnemonics_ extends CustomJavaAction<IMendix
 			selectedNetwork = Networks.mainnet();
 		}
 		Account newAccount = new Account(selectedNetwork);
-		this.Wallet.setMnemonic(newAccount.mnemonic());
+		String mnemonicSentence = newAccount.mnemonic();
+		this.Wallet.setMnemonic(mnemonicSentence);
 		this.Wallet.setBaseAddress(newAccount.baseAddress());
 		this.Wallet.setStakeAddress(newAccount.stakeAddress());
+
+		// create a sentence object
+		// create list of mnemonic words for us on UI
+		// create object
+		IMendixObject newObject = Core.instantiate(context, "CardanoWallet.Mnemonic_sentence");
+		cardanowallet.proxies.Mnemonic_sentence mnemonicSentenceMx = cardanowallet.proxies.Mnemonic_sentence.initialize(context, newObject);
+		mnemonicSentenceMx.setCompleteSentence(mnemonicSentence);
+		mnemonicSentenceMx.setMnemonic_sentence_WalletAPI(this.Wallet);
+		this.Wallet.setMnemonic_sentence_WalletAPI(mnemonicSentenceMx);
+
+		
+		String[] mnenomicArray = mnemonicSentence.split(" ");
+		
+		for(String mnemonicWord : mnenomicArray) {
+			IMendixObject Mnemonic_wordMx = Core.instantiate(context, "CardanoWallet.Mnemonic_word");
+			cardanowallet.proxies.Mnemonic_word mnemonicWordMx = cardanowallet.proxies.Mnemonic_word.initialize(context, Mnemonic_wordMx);
+			mnemonicWordMx.setValue(mnemonicWord);
+			mnemonicWordMx.setMnemonic_word_Mnemonic_sentence(mnemonicSentenceMx);
+			mnemonicWordMx.setMnemonic_word_WalletAPI(this.Wallet);
+		}
 
 		return this.Wallet.getMendixObject();
 		// END USER CODE

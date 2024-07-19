@@ -35,8 +35,7 @@ public class JA_CreateAccountMnemonic extends CustomJavaAction<IMendixObject>
 
 		// BEGIN USER CODE
 		Network selectedNetwork;
-		String networkString = "preprod";// (String) Core.getConfiguration().getConstantValue("CardanoWallet.CARDANO_NETWORK");
-		// networkString =  networkString.length() > 0 ? networkString: "mainnet";
+		String networkString = this.WalletAPI.getCardanoNetwork().name();
 		if(networkString.equalsIgnoreCase("preprod")) {
 			selectedNetwork = Networks.preprod();
 		} else if(networkString.equalsIgnoreCase("testnet")) {
@@ -53,7 +52,6 @@ public class JA_CreateAccountMnemonic extends CustomJavaAction<IMendixObject>
 		// Account newAccount = new Account(selectedNetwork);
 		wallet.setBaseAddress(newAccount.baseAddress());
 		wallet.setStakeAddress(newAccount.stakeAddress());
-		wallet.setBaseAddress(networkString);
 		return wallet.getMendixObject();
 		//throw new com.mendix.systemwideinterfaces.MendixRuntimeException("Java action was not implemented");
 		// END USER CODE

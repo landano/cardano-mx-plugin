@@ -16,17 +16,19 @@ import com.mendix.core.Core;
 import com.mendix.systemwideinterfaces.core.IContext;
 import com.mendix.webui.CustomJavaAction;
 import com.mendix.systemwideinterfaces.core.IMendixObject;
-import com.bloxbean.cardano.client.backend.blockfrost.service.*; // ;;.backend.impl.blockfrost.BlockfrostBackendService;
+import com.bloxbean.cardano.client.backend.blockfrost.service.*;
 import com.mendix.systemwideinterfaces.core.*;
 
 public class JA_CreateAccountFromMnemonic extends CustomJavaAction<IMendixObject>
 {
 	private java.lang.String mnemonic;
+	private cardanowallet.proxies.Enum_CardanoNetwork CardanoNetworkEnum;
 
-	public JA_CreateAccountFromMnemonic(IContext context, java.lang.String mnemonic)
+	public JA_CreateAccountFromMnemonic(IContext context, java.lang.String mnemonic, java.lang.String CardanoNetworkEnum)
 	{
 		super(context);
 		this.mnemonic = mnemonic;
+		this.CardanoNetworkEnum = CardanoNetworkEnum == null ? null : cardanowallet.proxies.Enum_CardanoNetwork.valueOf(CardanoNetworkEnum);
 	}
 
 	@java.lang.Override
@@ -34,8 +36,7 @@ public class JA_CreateAccountFromMnemonic extends CustomJavaAction<IMendixObject
 	{
 		// BEGIN USER CODE
 		Network selectedNetwork;
-		String networkString = "preprod";// (String) Core.getConfiguration().getConstantValue(CardanoWallet.CARDANO_NETWORK);
-		// networkString =  networkString.length() > 0 ? networkString: "mainnet";
+		String networkString = this.CardanoNetworkEnum.name();
 		if(networkString.equalsIgnoreCase("preprod")) {
 			selectedNetwork = Networks.preprod();
 		} else if(networkString.equalsIgnoreCase("testnet")) {
@@ -45,12 +46,11 @@ public class JA_CreateAccountFromMnemonic extends CustomJavaAction<IMendixObject
 		} else {
 			selectedNetwork = Networks.mainnet();
 		}
-		Account newAccount = new Account(selectedNetwork, this.mnemonic);
-		// Account senderAccount = new Account(Networks.preprod(), this.mnemonic); encryption.proxies.PGPCertificate.initialize
+		// create object
 		IMendixObject newObject = Core.instantiate(getContext(), "CardanoWallet.WalletAPI");
 		cardanowallet.proxies.WalletAPI wallet = cardanowallet.proxies.WalletAPI.initialize(getContext(),newObject);
 
-		// Account newAccount = new Account(selectedNetwork);
+		Account newAccount = new Account(selectedNetwork, this.mnemonic);
 		wallet.setBaseAddress(newAccount.baseAddress());
 		wallet.setStakeAddress(newAccount.stakeAddress());
 		wallet.setBaseAddress(networkString);
