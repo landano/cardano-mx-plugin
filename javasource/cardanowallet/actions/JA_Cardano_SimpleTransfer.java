@@ -45,7 +45,7 @@ public class JA_Cardano_SimpleTransfer extends CustomJavaAction<java.lang.String
 	{
 		// BEGIN USER CODE
         // Define expected Outputs
-		Account senderAccount = new Account(Networks.testnet(), this.senderMnemonic);
+		Account senderAccount = new Account(Networks.preprod(), this.senderMnemonic);
 		String senderAddress = senderAccount.baseAddress();
 		
 		String receiverAddress1 = "addr_test1vplmgm9wresn92hf250zysd8zzdn8jyv7mmxe8lk3zjletqvh2ak2";
