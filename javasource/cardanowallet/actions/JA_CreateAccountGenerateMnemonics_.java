@@ -105,10 +105,13 @@ public class JA_CreateAccountGenerateMnemonics_ extends CustomJavaAction<IMendix
 
 		
 		String[] mnenomicArray = mnemonicSentence.split(" ");
-		
+
+		Integer index = 0;
 		for(String mnemonicWord : mnenomicArray) {
 			IMendixObject Mnemonic_wordMx = Core.instantiate(context, "CardanoWallet.Mnemonic_word");
 			cardanowallet.proxies.Mnemonic_word mnemonicWordMx = cardanowallet.proxies.Mnemonic_word.initialize(context, Mnemonic_wordMx);
+			index++;
+			mnemonicWordMx.setOrder(index);
 			mnemonicWordMx.setValue(mnemonicWord);
 			mnemonicWordMx.setMnemonic_word_Mnemonic_sentence(mnemonicSentenceMx);
 			mnemonicWordMx.setMnemonic_word_WalletAPI(this.Wallet);
