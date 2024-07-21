@@ -24916,6 +24916,10 @@ html div.dj_ios .widget-switch.auto .widget-switch-btn-wrapper.checked.widget-sw
   background: #28A745;
 }
 
+.another-class {
+  display: none;
+}
+
 .table {
   position: relative;
   border-width: 0;
