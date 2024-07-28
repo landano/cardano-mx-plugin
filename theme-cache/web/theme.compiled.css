@@ -24920,6 +24920,33 @@ html div.dj_ios .widget-switch.auto .widget-switch-btn-wrapper.checked.widget-sw
   display: none;
 }
 
+.login-page {
+  background-image: url("../../../resources/landanobg.jpg");
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+.login-page .login-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.login-page .login-container .card {
+  display: flex;
+  margin-top: 200px;
+  width: 450px;
+  border-radius: 25px;
+  min-width: 450px;
+  min-height: 282px;
+  padding: 20px 30px;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+
 .table {
   position: relative;
   border-width: 0;

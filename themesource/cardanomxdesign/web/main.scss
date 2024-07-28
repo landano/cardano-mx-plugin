@@ -31,3 +31,33 @@
   // trying to trigger a recompile of the scss
   display: none;
 }
+
+.login-page {
+
+  background-image: url('../../../resources/landanobg.jpg');
+  background-size: cover; // Ensures the image covers the entire div
+  background-repeat: no-repeat; // Prevents the image from repeating
+  background-position: center; // Centers the image in the div
+
+  .login-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+
+    .card {
+      display: flex;
+      margin-top: 200px;
+      width: 450px;
+      border-radius: 25px;
+      min-width: 450px;
+      min-height: 282px;
+      padding: 20px 30px;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+    }
+  }
+}
