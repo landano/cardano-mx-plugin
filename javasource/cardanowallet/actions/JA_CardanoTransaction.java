@@ -33,16 +33,14 @@ import static com.bloxbean.cardano.client.common.ADAConversionUtil.adaToLovelace
 
 public class JA_CardanoTransaction extends CustomJavaAction<java.lang.String>
 {
-	private java.lang.String SenderAddress;
 	private java.lang.String ReceiverAddress;
 	private java.math.BigDecimal Amount;
 	private cardanowallet.proxies.Enum_CardanoNetwork CardanoNetwork;
 	private java.lang.String MnemonicTemporary;
 
-	public JA_CardanoTransaction(IContext context, java.lang.String SenderAddress, java.lang.String ReceiverAddress, java.math.BigDecimal Amount, java.lang.String CardanoNetwork, java.lang.String MnemonicTemporary)
+	public JA_CardanoTransaction(IContext context, java.lang.String ReceiverAddress, java.math.BigDecimal Amount, java.lang.String CardanoNetwork, java.lang.String MnemonicTemporary)
 	{
 		super(context);
-		this.SenderAddress = SenderAddress;
 		this.ReceiverAddress = ReceiverAddress;
 		this.Amount = Amount;
 		this.CardanoNetwork = CardanoNetwork == null ? null : cardanowallet.proxies.Enum_CardanoNetwork.valueOf(CardanoNetwork);
@@ -54,15 +52,21 @@ public class JA_CardanoTransaction extends CustomJavaAction<java.lang.String>
 	{
 		// BEGIN USER CODE
 		Network selectedNetwork;
+		String blockfrostUrl;
+
 		String networkString = CardanoNetwork.name();
 		if(networkString.equalsIgnoreCase("preprod")) {
 			selectedNetwork = Networks.preprod();
+			blockfrostUrl = Constants.BLOCKFROST_PREPROD_URL;
 		} else if(networkString.equalsIgnoreCase("testnet")) {
 			selectedNetwork = Networks.testnet();
+			blockfrostUrl = Constants.BLOCKFROST_TESTNET_URL;
 		} else if(networkString.equalsIgnoreCase("preview")) {
+			blockfrostUrl = Constants.BLOCKFROST_PREVIEW_URL;
 			selectedNetwork = Networks.preview();
 		} else {
 			selectedNetwork = Networks.mainnet();
+			blockfrostUrl = Constants.BLOCKFROST_MAINNET_URL;
 		}
 
 		Account senderAccount = new Account(selectedNetwork, this.MnemonicTemporary);
@@ -70,9 +74,9 @@ public class JA_CardanoTransaction extends CustomJavaAction<java.lang.String>
 		
 		String receiverAddress1 = this.ReceiverAddress;
 
-		String bfProjectId = "preprodoqh304gIgYVyyNtpiv3TkpMsBQttuHzr"; // "preprodkNJSdhOtgW6cpPNyA0scayVdhWjsXGaZ";
+		String bfProjectId = cardanowallet.proxies.constants.Constants.getBLOCKFROST_PROJECTID();
 		BFBackendService backendService =
-		        new BFBackendService(Constants.BLOCKFROST_PREPROD_URL, bfProjectId);
+		        new BFBackendService(blockfrostUrl, bfProjectId);
 		
 		Output output1 = Output.builder()
                 .address(receiverAddress1)
@@ -95,7 +99,7 @@ public class JA_CardanoTransaction extends CustomJavaAction<java.lang.String>
 		                                    .buildAndSign(txBuilder, SignerProviders.signerFrom(senderAccount));
 		
 		Result<String> result = backendService.getTransactionService().submitTransaction(signedTransaction.serialize());
-		return result.getValue();	
+		return result.getValue();
 		// END USER CODE
 	}
 
