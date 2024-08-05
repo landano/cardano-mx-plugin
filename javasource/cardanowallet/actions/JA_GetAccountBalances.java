@@ -11,26 +11,71 @@ package cardanowallet.actions;
 
 import com.mendix.systemwideinterfaces.core.IContext;
 import com.mendix.webui.CustomJavaAction;
+import com.bloxbean.cardano.client.common.model.Network;
+import com.bloxbean.cardano.client.common.model.Networks;
+import com.bloxbean.cardano.client.backend.api.AccountService;
+import com.bloxbean.cardano.client.backend.api.BackendService;
+import com.bloxbean.cardano.client.backend.blockfrost.common.Constants;
+import com.bloxbean.cardano.client.backend.blockfrost.service.BFBackendService;
+import com.bloxbean.cardano.client.account.Account;
+import com.bloxbean.cardano.client.api.model.Result;
+import com.bloxbean.cardano.client.backend.model.*;
+import static com.bloxbean.cardano.client.common.ADAConversionUtil.lovelaceToAda;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.net.URI;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mendix.systemwideinterfaces.core.IMendixObject;
+import com.mendix.core.Core;
+import com.mendix.logging.ILogNode;
+import java.math.BigInteger;
 
-public class JA_GetAccountBalances extends CustomJavaAction<java.math.BigDecimal>
+public class JA_GetAccountBalances extends CustomJavaAction<java.lang.Void>
 {
-	private IMendixObject __Parameter;
-	private cardanowallet.proxies.Wallet Parameter;
+	private IMendixObject __Wallet;
+	private cardanowallet.proxies.Wallet Wallet;
 
-	public JA_GetAccountBalances(IContext context, IMendixObject Parameter)
+	public JA_GetAccountBalances(IContext context, IMendixObject Wallet)
 	{
 		super(context);
-		this.__Parameter = Parameter;
+		this.__Wallet = Wallet;
 	}
 
 	@java.lang.Override
-	public java.math.BigDecimal executeAction() throws Exception
+	public java.lang.Void executeAction() throws Exception
 	{
-		this.Parameter = this.__Parameter == null ? null : cardanowallet.proxies.Wallet.initialize(getContext(), __Parameter);
+		this.Wallet = this.__Wallet == null ? null : cardanowallet.proxies.Wallet.initialize(getContext(), __Wallet);
 
 		// BEGIN USER CODE
-		throw new com.mendix.systemwideinterfaces.MendixRuntimeException("Java action was not implemented");
+		this.blockfrostProjectId = cardanowallet.proxies.constants.Constants.getBLOCKFROST_PROJECTID();
+		String networkString = this.Wallet.getCardanonetwork().name();
+		setNetworkDetails(networkString);		
+		
+		BFBackendService backendService =
+					new BFBackendService(this.blockfrostUrl, this.blockfrostProjectId);
+
+		// use the account service to get the account information
+		AccountService accountService = backendService.getAccountService();
+		Result<AccountInformation> accountBalanceResult = accountService.getAccountInformation(this.Wallet.getStakeAddress());
+		LOG.info(accountBalanceResult);
+
+		// use http api request to get the balance
+		/*
+		String httpBalance = getAccountBalance(this.Wallet.getBaseAddress());
+		LOG.info(httpBalance);
+		*/
+		BigInteger accountBalance = accountBalanceResult.isSuccessful()
+			? new BigInteger(accountBalanceResult.getValue().getControlledAmount())
+			: new BigInteger("0");
+
+		this.Wallet.setBalance(lovelaceToAda(accountBalance));
+		return null;
+		// Print the balance
+		// return new java.math.BigDecimal(10.0);
+		// return accountBalance.getAmount();
+
 		// END USER CODE
 	}
 
@@ -45,5 +90,75 @@ public class JA_GetAccountBalances extends CustomJavaAction<java.math.BigDecimal
 	}
 
 	// BEGIN EXTRA CODE
+
+	private Network selectedNetwork;
+	private String blockfrostUrl;
+	private String blockfrostProjectId = cardanowallet.proxies.constants.Constants.getBLOCKFROST_PROJECTID();
+	public static ILogNode LOG = Core.getLogger("LandanoTest");
+
+	private void setNetworkDetails(String cardanoNetworkString) {
+		cardanoNetworkString =  cardanoNetworkString.length() > 0 ? cardanoNetworkString: "mainnet";
+		if(cardanoNetworkString.equalsIgnoreCase("preprod")) {
+			this.selectedNetwork = Networks.preprod();
+			this.blockfrostUrl = Constants.BLOCKFROST_PREPROD_URL;
+		} else if(cardanoNetworkString.equalsIgnoreCase("testnet")) {
+			this.selectedNetwork = Networks.testnet();
+			this.blockfrostUrl = Constants.BLOCKFROST_TESTNET_URL;
+		} else if(cardanoNetworkString.equalsIgnoreCase("preview")) {
+			this.blockfrostUrl = Constants.BLOCKFROST_PREVIEW_URL;
+			this.selectedNetwork = Networks.preview();
+		} else {
+			this.selectedNetwork = Networks.mainnet();
+			this.blockfrostUrl = Constants.BLOCKFROST_MAINNET_URL;	
+		}
+	}
+
+	/**
+	 * EncryptDecryptMnemonic
+	 */
+
+	private String API_KEY = cardanowallet.proxies.constants.Constants.getBLOCKFROST_PROJECTID() ;
+
+	// private String getApiResponse(String apiUrl) throws Exception {
+	// 	try {
+	// 		String blockfrostProjectApiKey = cardanowallet.proxies.constants.Constants.getBLOCKFROST_PROJECTID();
+	// 		// String ttt = "https://cardano-preprod.blockfrost.io/api/v0/addresses/addr_test1qqjramm4y4jlfxv80agew7xxsuppjqceywrksajapjdy9hp3d9uah6el8ymptlm8582schygnf0l65zgsq285st0ku5sjek7xl";
+	// 		HttpClient client = HttpClient.newHttpClient();
+	// 		HttpRequest request = HttpRequest.newBuilder()
+	// 			.uri(new URI(this.blockfrostUrl + apiUrl)) // Set the API URL
+	// 			.header("project_id", blockfrostProjectApiKey) // Set the API key in the request header
+	// 			.header("Content-Type", "application/json") // Set the Content-Type header
+	// 			.GET()
+	// 			.build();
+
+	// 		HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+	// 		if (response.statusCode() == 200) { // success
+	// 			return response.body();
+	// 		} else {
+	// 			throw new RuntimeException("Failed : HTTP error code : " + response.statusCode());
+	// 		}
+	// 	} catch (Exception e) {
+	// 		throw new RuntimeException("Failed to get response from API: " + e.getMessage());
+	// 	}
+    // }
+
+	// private String getAccountBalance(String address) throws Exception {
+	// 	String jsonResponse = getApiResponse("addresses/" + address );
+	// 	ObjectMapper objectMapper = new ObjectMapper();
+    //     JsonNode rootNode = objectMapper.readTree(jsonResponse);
+    //     JsonNode amountArray = rootNode.path("amount");
+
+    //     if (amountArray.isArray() && amountArray.size() > 0) {
+    //         JsonNode firstItem = amountArray.get(0);
+	// 		String unit = firstItem.path("unit").asText();
+    //         String amount = firstItem.path("quantity").asText();
+	// 		return amount;
+    //     } else {
+    //         return "No amount data available";
+    //     }
+	// }
+	
+
 	// END EXTRA CODE
 }

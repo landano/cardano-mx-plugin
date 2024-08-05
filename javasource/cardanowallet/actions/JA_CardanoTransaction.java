@@ -30,21 +30,26 @@ import com.mendix.systemwideinterfaces.core.IContext;
 import com.mendix.webui.CustomJavaAction;
 import static com.bloxbean.cardano.client.common.CardanoConstants.LOVELACE;
 import static com.bloxbean.cardano.client.common.ADAConversionUtil.adaToLovelace;
+import com.mendix.core.Core;
+import com.mendix.logging.ILogNode;
+import cardanowallet.EncryptDecryptMnemonic;
 
 public class JA_CardanoTransaction extends CustomJavaAction<java.lang.String>
 {
 	private java.lang.String ReceiverAddress;
 	private java.math.BigDecimal Amount;
 	private cardanowallet.proxies.Enum_CardanoNetwork CardanoNetwork;
-	private java.lang.String MnemonicTemporary;
+	private java.lang.String EncryptedMnemonic;
+	private java.lang.String Passphrase;
 
-	public JA_CardanoTransaction(IContext context, java.lang.String ReceiverAddress, java.math.BigDecimal Amount, java.lang.String CardanoNetwork, java.lang.String MnemonicTemporary)
+	public JA_CardanoTransaction(IContext context, java.lang.String ReceiverAddress, java.math.BigDecimal Amount, java.lang.String CardanoNetwork, java.lang.String EncryptedMnemonic, java.lang.String Passphrase)
 	{
 		super(context);
 		this.ReceiverAddress = ReceiverAddress;
 		this.Amount = Amount;
 		this.CardanoNetwork = CardanoNetwork == null ? null : cardanowallet.proxies.Enum_CardanoNetwork.valueOf(CardanoNetwork);
-		this.MnemonicTemporary = MnemonicTemporary;
+		this.EncryptedMnemonic = EncryptedMnemonic;
+		this.Passphrase = Passphrase;
 	}
 
 	@java.lang.Override
@@ -69,7 +74,12 @@ public class JA_CardanoTransaction extends CustomJavaAction<java.lang.String>
 			blockfrostUrl = Constants.BLOCKFROST_MAINNET_URL;
 		}
 
-		Account senderAccount = new Account(selectedNetwork, this.MnemonicTemporary);
+		// Decrypt the mnemonic
+		EncryptDecryptMnemonic decryptMnemonic = new EncryptDecryptMnemonic();
+		String mnemonic = decryptMnemonic.decrypt(this.EncryptedMnemonic, this.Passphrase);
+
+		Account senderAccount = new Account(selectedNetwork, mnemonic);
+		LOG.info(senderAccount);
 		String senderAddress = senderAccount.baseAddress();
 		
 		String receiverAddress1 = this.ReceiverAddress;
@@ -83,7 +93,7 @@ public class JA_CardanoTransaction extends CustomJavaAction<java.lang.String>
                 .assetName(LOVELACE)
                 .qty(adaToLovelace(this.Amount.doubleValue()))
                 .build();
-
+		// make this dynamic
 		MessageMetadata metadata = MessageMetadata.create()
                 .add("Transaction message To be replaced with message from UI");
 		
@@ -99,6 +109,7 @@ public class JA_CardanoTransaction extends CustomJavaAction<java.lang.String>
 		                                    .buildAndSign(txBuilder, SignerProviders.signerFrom(senderAccount));
 		
 		Result<String> result = backendService.getTransactionService().submitTransaction(signedTransaction.serialize());
+		LOG.info(result);
 		return result.getValue();
 		// END USER CODE
 	}
@@ -114,5 +125,26 @@ public class JA_CardanoTransaction extends CustomJavaAction<java.lang.String>
 	}
 
 	// BEGIN EXTRA CODE
+	public static ILogNode LOG = Core.getLogger("LandanoTest");
+	/*public void waitForTransaction(Result<String> result) {
+		try {
+			if (result.isSuccessful()) { //Wait for transaction to be mined
+				int count = 0;
+				while (count < 60) {
+					Result<TransactionContent> txnResult = transactionService.getTransaction(result.getValue());
+					if (txnResult.isSuccessful()) {
+						System.out.println(JsonUtil.getPrettyJson(txnResult.getValue()));
+						break;
+					} else {
+						System.out.println("Waiting for transaction to be mined ....");
+					}
+					count++;
+					Thread.sleep(2000);
+				}
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}*/
 	// END EXTRA CODE
 }
