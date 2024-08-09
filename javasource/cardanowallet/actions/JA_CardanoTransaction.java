@@ -41,8 +41,9 @@ public class JA_CardanoTransaction extends CustomJavaAction<java.lang.String>
 	private cardanowallet.proxies.Enum_CardanoNetwork CardanoNetwork;
 	private java.lang.String EncryptedMnemonic;
 	private java.lang.String Passphrase;
+	private java.lang.String TransactionMetaData;
 
-	public JA_CardanoTransaction(IContext context, java.lang.String ReceiverAddress, java.math.BigDecimal Amount, java.lang.String CardanoNetwork, java.lang.String EncryptedMnemonic, java.lang.String Passphrase)
+	public JA_CardanoTransaction(IContext context, java.lang.String ReceiverAddress, java.math.BigDecimal Amount, java.lang.String CardanoNetwork, java.lang.String EncryptedMnemonic, java.lang.String Passphrase, java.lang.String TransactionMetaData)
 	{
 		super(context);
 		this.ReceiverAddress = ReceiverAddress;
@@ -50,6 +51,7 @@ public class JA_CardanoTransaction extends CustomJavaAction<java.lang.String>
 		this.CardanoNetwork = CardanoNetwork == null ? null : cardanowallet.proxies.Enum_CardanoNetwork.valueOf(CardanoNetwork);
 		this.EncryptedMnemonic = EncryptedMnemonic;
 		this.Passphrase = Passphrase;
+		this.TransactionMetaData = TransactionMetaData;
 	}
 
 	@java.lang.Override
@@ -95,7 +97,7 @@ public class JA_CardanoTransaction extends CustomJavaAction<java.lang.String>
                 .build();
 		// make this dynamic
 		MessageMetadata metadata = MessageMetadata.create()
-                .add("Transaction message To be replaced with message from UI");
+                .add(this.TransactionMetaData);
 		
 		TxBuilder txBuilder = output1.outputBuilder()
                 .buildInputs(InputBuilders.createFromSender(senderAddress, senderAddress))
