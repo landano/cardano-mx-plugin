@@ -19,6 +19,7 @@ import com.bloxbean.cardano.client.backend.blockfrost.common.Constants;
 import com.bloxbean.cardano.client.backend.blockfrost.service.BFBackendService;
 import com.bloxbean.cardano.client.account.Account;
 import com.bloxbean.cardano.client.api.model.Result;
+import com.bloxbean.cardano.client.api.common.OrderEnum;
 import com.bloxbean.cardano.client.backend.model.*;
 import static com.bloxbean.cardano.client.common.ADAConversionUtil.lovelaceToAda;
 import java.net.http.HttpClient;
@@ -31,6 +32,7 @@ import com.mendix.systemwideinterfaces.core.IMendixObject;
 import com.mendix.core.Core;
 import com.mendix.logging.ILogNode;
 import java.math.BigInteger;
+import java.util.List;
 
 public class JA_GetAccountBalances extends CustomJavaAction<java.lang.Void>
 {
@@ -59,7 +61,9 @@ public class JA_GetAccountBalances extends CustomJavaAction<java.lang.Void>
 		// use the account service to get the account information
 		AccountService accountService = backendService.getAccountService();
 		Result<AccountInformation> accountBalanceResult = accountService.getAccountInformation(this.Wallet.getStakeAddress());
+		Result<List<AccountHistory>> accountHistoryResult = accountService.getAccountHistory(this.Wallet.getStakeAddress(), 10, 1, OrderEnum.desc);
 		LOG.info(accountBalanceResult);
+		LOG.info(accountHistoryResult);
 
 		// use http api request to get the balance
 		/*
