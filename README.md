@@ -73,6 +73,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Contact
 
 For questions, feedback, or support, please open an issue in the repository or contact us using the form on our website at https://www.landano.io/contact
-```
-
-You should now be able to copy everything without markdown preview interfering.
