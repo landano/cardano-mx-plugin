@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "cbor": "^9.0.2",
+    "stream-browserify": "^3.0.0"
+  }
+}
