@@ -16,11 +16,11 @@ public class JA_CardanoTransaction_UnSigned extends CustomJavaAction<java.lang.S
 {
 	private java.lang.String SenderAddress;
 	private java.lang.String ReceiverAddress;
-	private java.math.BigDecimal Amount;
+	private java.lang.Long Amount;
 	private cardanowallet.proxies.Enum_CardanoNetwork CardanoNetwork;
 	private java.lang.String TransactionMetaData;
 
-	public JA_CardanoTransaction_UnSigned(IContext context, java.lang.String SenderAddress, java.lang.String ReceiverAddress, java.math.BigDecimal Amount, java.lang.String CardanoNetwork, java.lang.String TransactionMetaData)
+	public JA_CardanoTransaction_UnSigned(IContext context, java.lang.String SenderAddress, java.lang.String ReceiverAddress, java.lang.Long Amount, java.lang.String CardanoNetwork, java.lang.String TransactionMetaData)
 	{
 		super(context);
 		this.SenderAddress = SenderAddress;
