@@ -25,7 +25,7 @@ export async function JS_ListAvailableWallets() {
         }));
 
         const mxObjects = [];
-        const walletEntity = "CardanoLightWallet.Wallet";
+        const walletEntity = "CardanoWallet.WalletAPI";
 
         for (const wallet of walletDetails) {
             const mxObject = await new Promise((resolve, reject) => {
@@ -37,7 +37,7 @@ export async function JS_ListAvailableWallets() {
             });
             mxObject.set("Name", wallet.name);
             mxObject.set("Icon", wallet.icon);
-            mxObject.set("WalletID", wallet.identifier);
+            mxObject.set("_id", wallet.identifier);
             mxObjects.push(mxObject);
         }
 

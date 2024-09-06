@@ -9,8 +9,26 @@
 
 package cardanowallet.actions;
 
+import static com.bloxbean.cardano.client.common.ADAConversionUtil.adaToLovelace;
+import com.bloxbean.cardano.client.backend.api.DefaultProtocolParamsSupplier;
+import com.bloxbean.cardano.client.backend.api.DefaultUtxoSupplier;
+import com.bloxbean.cardano.client.backend.blockfrost.common.Constants;
+import com.bloxbean.cardano.client.backend.blockfrost.service.BFBackendService;
+import com.bloxbean.cardano.client.cip.cip20.MessageMetadata;
+import com.bloxbean.cardano.client.common.model.Network;
+import com.bloxbean.cardano.client.common.model.Networks;
+import com.bloxbean.cardano.client.function.Output;
+import com.bloxbean.cardano.client.function.TxBuilder;
+import com.bloxbean.cardano.client.function.TxBuilderContext;
+import com.bloxbean.cardano.client.function.helper.AuxDataProviders;
+import com.bloxbean.cardano.client.function.helper.BalanceTxBuilders;
+import com.bloxbean.cardano.client.function.helper.InputBuilders;
+import com.bloxbean.cardano.client.transaction.spec.Transaction;
 import com.mendix.systemwideinterfaces.core.IContext;
 import com.mendix.webui.CustomJavaAction;
+import static com.bloxbean.cardano.client.common.CardanoConstants.LOVELACE;
+import com.mendix.core.Core;
+import com.mendix.logging.ILogNode;
 
 public class JA_CardanoTransaction_UnSigned extends CustomJavaAction<java.lang.String>
 {
@@ -34,7 +52,61 @@ public class JA_CardanoTransaction_UnSigned extends CustomJavaAction<java.lang.S
 	public java.lang.String executeAction() throws Exception
 	{
 		// BEGIN USER CODE
-		throw new com.mendix.systemwideinterfaces.MendixRuntimeException("Java action was not implemented");
+		final ILogNode LOG = Core.getLogger("CardanoWallet");
+		
+		LOG.debug("Start Execution of JA_CardanoTransaction_UnSigned");
+
+		String blockfrostUrl;
+		Network selectedNetwork;
+
+		String networkString = CardanoNetwork.name();
+		if(networkString.equalsIgnoreCase("preprod")) {
+			selectedNetwork = Networks.preprod();
+			blockfrostUrl = Constants.BLOCKFROST_PREPROD_URL;
+		} else if(networkString.equalsIgnoreCase("testnet")) {
+			selectedNetwork = Networks.testnet();
+			blockfrostUrl = Constants.BLOCKFROST_TESTNET_URL;
+		} else if(networkString.equalsIgnoreCase("preview")) {
+			blockfrostUrl = Constants.BLOCKFROST_PREVIEW_URL;
+			selectedNetwork = Networks.preview();
+		} else {
+			selectedNetwork = Networks.mainnet();
+			blockfrostUrl = Constants.BLOCKFROST_MAINNET_URL;
+		}
+
+
+
+		String senderAddress = this.SenderAddress;
+		String receiverAddress1 = this.ReceiverAddress;
+
+		String bfProjectId = cardanowallet.proxies.constants.Constants.getBLOCKFROST_PROJECTID();
+		
+		BFBackendService backendService =
+				new BFBackendService(blockfrostUrl, bfProjectId);
+
+		Output output1 = Output.builder()
+				.address(receiverAddress1)
+				.assetName(LOVELACE)
+				.qty(adaToLovelace(this.Amount.doubleValue()))
+				.build();
+		
+		MessageMetadata metadata = MessageMetadata.create()
+		.add(this.TransactionMetaData);
+				
+		TxBuilder txBuilder = output1.outputBuilder()
+				.buildInputs(InputBuilders.createFromSender(senderAddress, senderAddress))
+				.andThen(AuxDataProviders.metadataProvider(metadata))
+				.andThen(BalanceTxBuilders.balanceTx(senderAddress, 1));
+		
+		DefaultUtxoSupplier utxoSupplier = new DefaultUtxoSupplier(backendService.getUtxoService());
+		DefaultProtocolParamsSupplier protocolParamsSupplier = new DefaultProtocolParamsSupplier(backendService.getEpochService());
+		
+		Transaction unsignedTransaction = TxBuilderContext.init(utxoSupplier, protocolParamsSupplier)
+											.build(txBuilder);
+		
+		String unsignedTransactionCbor = unsignedTransaction.serializeToHex();
+		LOG.debug("Finish Execution of JA_CardanoTransaction_UnSigned");
+		return unsignedTransactionCbor;
 		// END USER CODE
 	}
 
@@ -49,5 +121,6 @@ public class JA_CardanoTransaction_UnSigned extends CustomJavaAction<java.lang.S
 	}
 
 	// BEGIN EXTRA CODE
+	
 	// END EXTRA CODE
 }

@@ -14,8 +14,8 @@ import { Big } from "big.js";
 /**
  * @returns {Promise.<void>}
  */
-export async function JS_EnableFlint() {
+export async function JS_FetchCardanoWalletUtxos() {
 	// BEGIN USER CODE
-	cardano.flint.enable();
+	throw new Error("JavaScript action was not implemented");
 	// END USER CODE
 }
