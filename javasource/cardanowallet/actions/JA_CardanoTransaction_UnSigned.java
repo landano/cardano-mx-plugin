@@ -34,11 +34,11 @@ public class JA_CardanoTransaction_UnSigned extends CustomJavaAction<java.lang.S
 {
 	private java.lang.String SenderAddress;
 	private java.lang.String ReceiverAddress;
-	private java.lang.Long Amount;
+	private java.math.BigDecimal Amount;
 	private cardanowallet.proxies.Enum_CardanoNetwork CardanoNetwork;
 	private java.lang.String TransactionMetaData;
 
-	public JA_CardanoTransaction_UnSigned(IContext context, java.lang.String SenderAddress, java.lang.String ReceiverAddress, java.lang.Long Amount, java.lang.String CardanoNetwork, java.lang.String TransactionMetaData)
+	public JA_CardanoTransaction_UnSigned(IContext context, java.lang.String SenderAddress, java.lang.String ReceiverAddress, java.math.BigDecimal Amount, java.lang.String CardanoNetwork, java.lang.String TransactionMetaData)
 	{
 		super(context);
 		this.SenderAddress = SenderAddress;
@@ -74,8 +74,6 @@ public class JA_CardanoTransaction_UnSigned extends CustomJavaAction<java.lang.S
 			blockfrostUrl = Constants.BLOCKFROST_MAINNET_URL;
 		}
 
-
-
 		String senderAddress = this.SenderAddress;
 		String receiverAddress1 = this.ReceiverAddress;
 
@@ -103,6 +101,10 @@ public class JA_CardanoTransaction_UnSigned extends CustomJavaAction<java.lang.S
 		
 		Transaction unsignedTransaction = TxBuilderContext.init(utxoSupplier, protocolParamsSupplier)
 											.build(txBuilder);
+		
+		unsignedTransaction.setAuxiliaryData(null);
+		unsignedTransaction.setWitnessSet(null);
+		LOG.info("Unsigned Transaction : " + unsignedTransaction.toJson());
 		
 		String unsignedTransactionCbor = unsignedTransaction.serializeToHex();
 		LOG.debug("Finish Execution of JA_CardanoTransaction_UnSigned");
