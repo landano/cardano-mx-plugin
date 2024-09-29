@@ -18,32 +18,43 @@ import { Big } from "big.js";
 export async function JS_Wallet_Connect(wallet) {
 	// BEGIN USER CODE
     const walletIdentifier = wallet.get('_id');
-    if (window.cardano && window.cardano[walletIdentifier]) {
-        try {
-            const cardanoWallet = await window.cardano[walletIdentifier].enable();
+    if (!cardano || !cardano[walletIdentifier]) {
+        console.error('Wallet not found');
+        return false;
+    }
 
-            const networkId = await cardanoWallet.getNetworkId();
-
-            // Update the RewardAddress attribute of the Wallet object
-            wallet.set('NetworkID', networkId);
-
-            // Get the reward addresses associated with the wallet
-            const rewardAddresses = await cardanoWallet.getRewardAddresses();
-
-            // Typically, you want the first reward address
-            const stakeAddress = rewardAddresses[0];
-            console.log(stakeAddress);
-            
-            // Update the RewardAddress attribute of the Wallet object
-            wallet.set('RewardAddress', stakeAddress);
-
-            return true; // Indicate success
-        } catch (error) {
-            console.error('Failed to connect wallet:', error);
-            throw new Error('Wallet connection failed');
+    try {
+        // Re-enable the wallet and retrieve the wallet API object
+        const cardanoWallet = await cardano[walletIdentifier].enable();
+        if (!cardanoWallet) {
+            throw new Error('Could not enable wallet');
         }
-    } else {
-        throw new Error('Wallet not found');
+
+        console.log('Cardano Wallet enabled:', cardanoWallet);
+
+        // Get the network ID
+        const networkId = await cardanoWallet.getNetworkId();
+        if (!networkId) {
+            throw new Error('Could not determine network');
+        }
+        wallet.set('NetworkID', networkId);
+        console.log('Network ID:', networkId);
+
+        // Get the reward addresses
+        const rewardAddresses = await cardanoWallet.getRewardAddresses();
+        if (!rewardAddresses || rewardAddresses.length === 0) {
+            throw new Error('Could not determine reward addresses');
+        }
+
+        // Use the first reward address
+        const stakeAddress = rewardAddresses[0];
+        wallet.set('StakeAddress', stakeAddress);
+        console.log('Stake Address:', stakeAddress);
+
+        return true; // Success
+    } catch (error) {
+        console.error('Failed to connect wallet:', error);
+        return false; // Failure
     }
 	// END USER CODE
 }

@@ -1,6 +1,11 @@
 {
   "dependencies": {
+    "@emurgo/cardano-serialization-lib-asmjs": "^12.1.0",
+    "@emurgo/cardano-serialization-lib-browser": "^12.1.0",
+    "@meshsdk/core": "^1.7.6",
     "cbor": "^9.0.2",
+    "crypto-browserify": "^3.12.0",
+    "lucid-cardano": "^0.10.10",
     "stream-browserify": "^3.0.0"
   }
 }

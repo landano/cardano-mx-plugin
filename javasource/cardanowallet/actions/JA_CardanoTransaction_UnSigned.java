@@ -88,12 +88,12 @@ public class JA_CardanoTransaction_UnSigned extends CustomJavaAction<java.lang.S
 				.qty(adaToLovelace(this.Amount.doubleValue()))
 				.build();
 		
-		MessageMetadata metadata = MessageMetadata.create()
-		.add(this.TransactionMetaData);
+		//MessageMetadata metadata = MessageMetadata.create()
+		//.add(this.TransactionMetaData);
 				
 		TxBuilder txBuilder = output1.outputBuilder()
 				.buildInputs(InputBuilders.createFromSender(senderAddress, senderAddress))
-				.andThen(AuxDataProviders.metadataProvider(metadata))
+				//.andThen(AuxDataProviders.metadataProvider(metadata))
 				.andThen(BalanceTxBuilders.balanceTx(senderAddress, 1));
 		
 		DefaultUtxoSupplier utxoSupplier = new DefaultUtxoSupplier(backendService.getUtxoService());
