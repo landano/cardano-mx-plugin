@@ -23,6 +23,9 @@ import com.bloxbean.cardano.client.function.TxBuilderContext;
 import com.bloxbean.cardano.client.function.helper.AuxDataProviders;
 import com.bloxbean.cardano.client.function.helper.BalanceTxBuilders;
 import com.bloxbean.cardano.client.function.helper.InputBuilders;
+import com.bloxbean.cardano.client.quicktx.QuickTxBuilder;
+import com.bloxbean.cardano.client.quicktx.Tx;
+import com.bloxbean.cardano.client.api.model.Amount;
 import com.bloxbean.cardano.client.transaction.spec.Transaction;
 import com.mendix.systemwideinterfaces.core.IContext;
 import com.mendix.webui.CustomJavaAction;
@@ -34,16 +37,16 @@ public class JA_CardanoTransaction_UnSigned extends CustomJavaAction<java.lang.S
 {
 	private java.lang.String SenderAddress;
 	private java.lang.String ReceiverAddress;
-	private java.math.BigDecimal Amount;
+	private java.math.BigDecimal AmountInAda;
 	private cardanowallet.proxies.Enum_CardanoNetwork CardanoNetwork;
 	private java.lang.String TransactionMetaData;
 
-	public JA_CardanoTransaction_UnSigned(IContext context, java.lang.String SenderAddress, java.lang.String ReceiverAddress, java.math.BigDecimal Amount, java.lang.String CardanoNetwork, java.lang.String TransactionMetaData)
+	public JA_CardanoTransaction_UnSigned(IContext context, java.lang.String SenderAddress, java.lang.String ReceiverAddress, java.math.BigDecimal AmountInAda, java.lang.String CardanoNetwork, java.lang.String TransactionMetaData)
 	{
 		super(context);
 		this.SenderAddress = SenderAddress;
 		this.ReceiverAddress = ReceiverAddress;
-		this.Amount = Amount;
+		this.AmountInAda = AmountInAda;
 		this.CardanoNetwork = CardanoNetwork == null ? null : cardanowallet.proxies.Enum_CardanoNetwork.valueOf(CardanoNetwork);
 		this.TransactionMetaData = TransactionMetaData;
 	}
@@ -79,7 +82,7 @@ public class JA_CardanoTransaction_UnSigned extends CustomJavaAction<java.lang.S
 
 		String bfProjectId = cardanowallet.proxies.constants.Constants.getBLOCKFROST_PROJECTID();
 		
-		BFBackendService backendService =
+/*		BFBackendService backendService =
 				new BFBackendService(blockfrostUrl, bfProjectId);
 
 		Output output1 = Output.builder()
@@ -108,7 +111,23 @@ public class JA_CardanoTransaction_UnSigned extends CustomJavaAction<java.lang.S
 		
 		String unsignedTransactionCbor = unsignedTransaction.serializeToHex();
 		LOG.debug("Finish Execution of JA_CardanoTransaction_UnSigned");
-		return unsignedTransactionCbor;
+		return unsignedTransactionCbor;*/
+		Tx tx1 = new Tx()
+                .payToAddress(receiverAddress1, Amount.ada(this.AmountInAda.doubleValue()))
+                .attachMetadata(MessageMetadata.create().add("This is a test message 2"))
+                .from(senderAddress);
+		
+		BFBackendService backendService =
+				new BFBackendService(blockfrostUrl, bfProjectId);
+		
+        QuickTxBuilder quickTxBuilder = new QuickTxBuilder(backendService);
+        
+        return quickTxBuilder
+        		.compose(tx1)
+        		.feePayer(senderAddress)
+        		.build()
+        		.serializeToHex();
+		
 		// END USER CODE
 	}
 

@@ -34,9 +34,7 @@ public class DecodeCborToJSON extends CustomJavaAction<java.lang.String>
 
 		try {
 			byte[] cborData = hexStringToByteArray(CBORHexString);
-			Transaction transaction = Transaction.deserialize(cborData);
-			LOG.info(transaction.toString());
-			return CborSerializationUtil.deserialize(cborData).toString();
+			return Transaction.deserialize(cborData).toJson();
         } catch (Exception e) {
             throw new RuntimeException("Error decoding CBOR data", e);
         }
