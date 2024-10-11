@@ -18,6 +18,7 @@ import com.mendix.webui.CustomJavaAction;
 import com.mendix.systemwideinterfaces.core.IMendixObject;
 import java.math.BigInteger;
 import java.util.List;
+import java.util.Map;
 import com.bloxbean.cardano.client.api.model.Result;
 import com.bloxbean.cardano.client.backend.api.DefaultProtocolParamsSupplier;
 import com.bloxbean.cardano.client.backend.api.DefaultUtxoSupplier;
@@ -27,6 +28,7 @@ import com.bloxbean.cardano.client.cip.cip25.NFTFile;
 import com.bloxbean.cardano.client.cip.cip25.NFTMetadata;
 import com.bloxbean.cardano.client.function.TxBuilder;
 import com.bloxbean.cardano.client.function.TxBuilderContext;
+import com.bloxbean.cardano.client.metadata.helper.JsonNoSchemaToMetadataConverter;
 import com.bloxbean.cardano.client.transaction.spec.Asset;
 import com.bloxbean.cardano.client.transaction.spec.MultiAsset;
 import com.bloxbean.cardano.client.transaction.spec.Policy;
@@ -45,6 +47,8 @@ import static com.bloxbean.cardano.client.common.ADAConversionUtil.adaToLovelace
 import com.mendix.core.Core;
 import com.mendix.logging.ILogNode;
 import cardanowallet.EncryptDecryptMnemonic;
+import com.bloxbean.cardano.client.util.JsonUtil;
+import com.bloxbean.cardano.client.metadata.Metadata;
 
 public class JA_Mint_NFT extends CustomJavaAction<java.lang.String>
 {
@@ -79,7 +83,7 @@ public class JA_Mint_NFT extends CustomJavaAction<java.lang.String>
 		setCardanoNetwork(CardanoNetwork.name());
 		sender = new Account(this.selectedNetwork, (new EncryptDecryptMnemonic()).decrypt(this.EncryptedMnemonic, this.Passphrase));
         String senderAddress = sender.baseAddress();
-        LOG.info(senderAddress);
+        LOG.info("Sender address"+senderAddress);
 
 		String receiverAddress = this.ReceiverAddress;
 
@@ -101,11 +105,19 @@ public class JA_Mint_NFT extends CustomJavaAction<java.lang.String>
                         .mediaType("application/gzip")
                         .src("https://arweave.net/1IBE9yoqVSJcxZNJACpcCwuJETQB5iXayOq-1JZbIdc"))
                 .description("This is a test NFT");
-        nft.property("landano_spatial_unit", this.MxNFT.getJSONMetadata());
 
+     // Assuming you have your JSON object in a variable called dataJsonObject
+     String customJsonMetadata = JsonUtil.getPrettyJson(this.MxNFT.getJSONMetadata());
+     
+     LOG.info(customJsonMetadata);
+     
+//        nft.property("landano_spatial_unit", customJsonMetadata);
         NFTMetadata nftMetadata = NFTMetadata.create()
-        		.version(1)
+        		.version("1")
                 .addNFT(policy.getPolicyId(), nft);
+        Metadata jsonMetadata = JsonNoSchemaToMetadataConverter.jsonToCborMetadata(customJsonMetadata);
+        nftMetadata.merge(jsonMetadata);
+        
 
         Value value = Value.builder()
                 .coin(BigInteger.ZERO)

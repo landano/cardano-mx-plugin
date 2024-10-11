@@ -9,10 +9,18 @@
 
 package cardanowallet.actions;
 
+import static com.bloxbean.cardano.client.function.helper.AuxDataProviders.metadataProvider;
+import static com.bloxbean.cardano.client.function.helper.BalanceTxBuilders.balanceTx;
+import static com.bloxbean.cardano.client.function.helper.InputBuilders.createFromSender;
+import static com.bloxbean.cardano.client.function.helper.MintCreators.mintCreator;
+import static com.bloxbean.cardano.client.function.helper.OutputBuilders.createFromMintOutput;
+import static com.bloxbean.cardano.client.function.helper.SignerProviders.signerFrom;
 import java.math.BigInteger;
 import java.util.List;
+import java.util.Map;
 import com.bloxbean.cardano.client.account.Account;
 import com.bloxbean.cardano.client.api.model.Result;
+import com.bloxbean.cardano.client.api.util.PolicyUtil;
 import com.bloxbean.cardano.client.backend.api.DefaultProtocolParamsSupplier;
 import com.bloxbean.cardano.client.backend.api.DefaultUtxoSupplier;
 import com.bloxbean.cardano.client.backend.blockfrost.common.Constants;
@@ -24,25 +32,24 @@ import com.bloxbean.cardano.client.common.model.Network;
 import com.bloxbean.cardano.client.common.model.Networks;
 import com.bloxbean.cardano.client.function.TxBuilder;
 import com.bloxbean.cardano.client.function.TxBuilderContext;
+import com.bloxbean.cardano.client.function.helper.SignerProviders;
+import com.bloxbean.cardano.client.metadata.cbor.CBORMetadataList;
+import com.bloxbean.cardano.client.metadata.cbor.CBORMetadataMap;
+import com.bloxbean.cardano.client.quicktx.QuickTxBuilder;
+import com.bloxbean.cardano.client.quicktx.Tx;
 import com.bloxbean.cardano.client.transaction.spec.Asset;
 import com.bloxbean.cardano.client.transaction.spec.MultiAsset;
 import com.bloxbean.cardano.client.transaction.spec.Policy;
 import com.bloxbean.cardano.client.transaction.spec.Transaction;
 import com.bloxbean.cardano.client.transaction.spec.TransactionOutput;
 import com.bloxbean.cardano.client.transaction.spec.Value;
-import com.bloxbean.cardano.client.api.util.PolicyUtil;
 import com.mendix.systemwideinterfaces.core.IContext;
 import com.mendix.webui.CustomJavaAction;
-import static com.bloxbean.cardano.client.function.helper.AuxDataProviders.metadataProvider;
-import static com.bloxbean.cardano.client.function.helper.BalanceTxBuilders.balanceTx;
-import static com.bloxbean.cardano.client.function.helper.InputBuilders.createFromSender;
-import static com.bloxbean.cardano.client.function.helper.MintCreators.mintCreator;
-import static com.bloxbean.cardano.client.function.helper.OutputBuilders.createFromMintOutput;
-import static com.bloxbean.cardano.client.function.helper.SignerProviders.signerFrom;
+import co.nstant.in.cbor.model.UnicodeString;
 
-public class JA_MintToken extends CustomJavaAction<java.lang.String>
+public class JA_MintNFTNew extends CustomJavaAction<java.lang.String>
 {
-	public JA_MintToken(IContext context)
+	public JA_MintNFTNew(IContext context)
 	{
 		super(context);
 	}
@@ -58,7 +65,7 @@ public class JA_MintToken extends CustomJavaAction<java.lang.String>
 
         String receiverAddress = "addr_test1qrhxkr2cp33gqdyxhpsrlmh6p0vpg7l98s2cxqyyy682v33xt2un9n7rv7xxslmlhfvfs3ugzgnzyhzun99tg2mhqrzsydpxx8";
 
-        Policy policy = PolicyUtil.createMultiSigScriptAllPolicy("policy-ld-2", 1);
+        Policy policy = PolicyUtil.createMultiSigScriptAllPolicy("policy-ld-1", 1);
 
         //Multi asset and NFT metadata
         MultiAsset multiAsset = new MultiAsset();
@@ -75,10 +82,10 @@ public class JA_MintToken extends CustomJavaAction<java.lang.String>
                         .name("file-1")
                         .mediaType("image/png")
                         .src("ipfs/Qmcv6hwtmdVumrNeb42R1KmCEWdYWGcqNgs17Y3hj6CkP4"))
-                .description("This is a test NFT2");
+                .description("This is a test NFT1");
 
         NFTMetadata nftMetadata = NFTMetadata.create()
-        		.version("1.0")
+        		.version("1")
                 .addNFT(policy.getPolicyId(), nft);
 
         Value value = Value.builder()
@@ -128,12 +135,64 @@ public class JA_MintToken extends CustomJavaAction<java.lang.String>
         System.out.println(signedTransaction);
         Result<String> result = backendService.getTransactionService().submitTransaction(signedTransaction.serialize());
         System.out.println(result);
+        
 
         if (result.isSuccessful())
             System.out.println("Transaction Id: " + result.getValue());
         else
             System.out.println("Transaction failed: " + result);
-        return result.getValue();
+        String resultNFT1 = result.getValue();
+//        ================================================================
+//        =========================NFT2===================================
+        Policy policy1 = PolicyUtil.createMultiSigScriptAllPolicy("policy-ld-2", 1);
+        String assetName = "la_spatialunit_nft_id_2"; //+ String.valueOf(Math.random());
+        BigInteger qty = BigInteger.valueOf(1);
+        NFT nft1 = NFT.create()
+                .assetName(assetName)
+                .name("SpatialUnit ABC123")
+                .property("city", "SpatialUnit ABC123")
+                .property("country", "country")
+                .description("A unique spatial unit representation.")
+                .image("ipfs://someimageurl-1")
+                .property("LA_SpatialUnit", Map.of(
+                        "SU_ID", "SU12345",
+                        "Area", "500m2",
+                        "Dimension", "2D"
+                ))
+                .addFile(NFTFile.create()
+                        .name("Landano Arkly Package")
+                        .mediaType("application/gzip")
+                        .src("https://arweave.net/1IBE9yoqVSJcxZNJACpcCwuJETQB5iXayOq-1JZbIdc"));
+
+        var map = nft1.getMap();
+        var spatialUnitMap = (co.nstant.in.cbor.model.Map) map.get(new UnicodeString("LA_SpatialUnit"));
+
+        //Create a reference point array
+        CBORMetadataList referencePtArray = new CBORMetadataList();
+        CBORMetadataMap referencePt1 = new CBORMetadataMap();
+        referencePt1.put("lat", BigInteger.valueOf(6733731));
+        referencePt1.putNegative("long", BigInteger.valueOf(-1778703));
+        referencePtArray.add(referencePt1);
+
+        spatialUnitMap.put(new UnicodeString("ReferencePoints"), referencePtArray.getArray());
+
+        NFTMetadata nftMetadata1 = NFTMetadata.create()
+                .addNFT(policy1.getPolicyId(), nft1);
+
+        Tx tx = new Tx()
+                .mintAssets(policy1.getPolicyScript(), new Asset(assetName, qty), sender.baseAddress())
+                .attachMetadata(nftMetadata1)
+                .from(sender.baseAddress());
+        QuickTxBuilder quickTxBuilder = new QuickTxBuilder(backendService);
+        Result<String> result1 = quickTxBuilder.compose(tx)
+                .withSigner(SignerProviders.signerFrom(sender))
+                .withSigner(SignerProviders.signerFrom(policy1))
+                .complete();
+
+        System.out.println(result1);
+        String resultNFT2 = result1.getValue();
+        
+        return "RESULT1: "+resultNFT1 + "\n RESULT2: "+resultNFT2;
 		// END USER CODE
 	}
 
@@ -144,7 +203,7 @@ public class JA_MintToken extends CustomJavaAction<java.lang.String>
 	@java.lang.Override
 	public java.lang.String toString()
 	{
-		return "JA_MintToken";
+		return "JA_MintNFTNew";
 	}
 
 	// BEGIN EXTRA CODE
