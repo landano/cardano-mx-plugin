@@ -115,6 +115,7 @@ public class JA_Mint_NFT extends CustomJavaAction<java.lang.String>
         NFTMetadata nftMetadata = NFTMetadata.create()
         		.version("1")
                 .addNFT(policy.getPolicyId(), nft);
+
         Metadata jsonMetadata = JsonNoSchemaToMetadataConverter.jsonToCborMetadata(customJsonMetadata);
         nftMetadata.merge(jsonMetadata);
         
