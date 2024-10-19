@@ -61,7 +61,7 @@ public class JA_Cardano_SimpleTransfer extends CustomJavaAction<java.lang.String
                 .build();
 
 		MessageMetadata metadata = MessageMetadata.create()
-                .add("First Mendix transfer transaction");
+                .add("{");
 		
 		TxBuilder txBuilder = output1.outputBuilder()
                 .buildInputs(InputBuilders.createFromSender(senderAddress, senderAddress))

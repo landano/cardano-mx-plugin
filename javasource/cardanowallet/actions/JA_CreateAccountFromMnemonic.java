@@ -53,7 +53,6 @@ public class JA_CreateAccountFromMnemonic extends CustomJavaAction<IMendixObject
 		Account newAccount = new Account(selectedNetwork, this.mnemonic);
 		wallet.setBaseAddress(newAccount.baseAddress());
 		wallet.setStakeAddress(newAccount.stakeAddress());
-		wallet.setBaseAddress(networkString);
 
 		/*
 		 * 
