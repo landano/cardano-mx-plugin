@@ -71,8 +71,10 @@ public class JA_Mint_NFT2 extends CustomJavaAction<java.lang.String>
 	private IMendixObject __MxNFT;
 	private cardanowallet.proxies.NFT MxNFT;
 	private java.lang.String IPFSImage;
+	private java.util.List<IMendixObject> __NFTFileList;
+	private java.util.List<cardanowallet.proxies.NFTFile> NFTFileList;
 
-	public JA_Mint_NFT2(IContext context, java.lang.String EncryptedMnemonic, java.lang.String Passphrase, java.lang.String ReceiverAddress, java.lang.String CardanoNetwork, java.lang.String Metadata, IMendixObject MxNFT, java.lang.String IPFSImage)
+	public JA_Mint_NFT2(IContext context, java.lang.String EncryptedMnemonic, java.lang.String Passphrase, java.lang.String ReceiverAddress, java.lang.String CardanoNetwork, java.lang.String Metadata, IMendixObject MxNFT, java.lang.String IPFSImage, java.util.List<IMendixObject> NFTFileList)
 	{
 		super(context);
 		this.EncryptedMnemonic = EncryptedMnemonic;
@@ -82,12 +84,19 @@ public class JA_Mint_NFT2 extends CustomJavaAction<java.lang.String>
 		this.Metadata = Metadata;
 		this.__MxNFT = MxNFT;
 		this.IPFSImage = IPFSImage;
+		this.__NFTFileList = NFTFileList;
 	}
 
 	@java.lang.Override
 	public java.lang.String executeAction() throws Exception
 	{
 		this.MxNFT = this.__MxNFT == null ? null : cardanowallet.proxies.NFT.initialize(getContext(), __MxNFT);
+
+		this.NFTFileList = java.util.Optional.ofNullable(this.__NFTFileList)
+			.orElse(java.util.Collections.emptyList())
+			.stream()
+			.map(__NFTFileListElement -> cardanowallet.proxies.NFTFile.initialize(getContext(), __NFTFileListElement))
+			.collect(java.util.stream.Collectors.toList());
 
 		// BEGIN USER CODE
 		setCardanoNetwork(CardanoNetwork.name()); //sets up blockfrostUrl and selectedNetwork, 
@@ -97,69 +106,6 @@ public class JA_Mint_NFT2 extends CustomJavaAction<java.lang.String>
 		sender = new Account(this.selectedNetwork, (new EncryptDecryptMnemonic()).decrypt(this.EncryptedMnemonic, this.Passphrase));
         String senderAddress = sender.baseAddress();
         LOG.info("Sender address"+senderAddress);
-
-//        Policy policy = PolicyUtil.createMultiSigScriptAllPolicy(this.MxNFT.getPolicyName(), 1);
-       
-//        NFTMetadata nftMetadata = generateNFTMetadata("la_spatialunit_nft_id_4", this.MxNFT.getJSONMetadata());
-//        System.out.println(nftMetadata.toString());
-        
-        //Multi asset and NFT metadata
-//        MultiAsset multiAsset = new MultiAsset(); 
-//        multiAsset.setPolicyId(policy.getPolicyId());
-//        Asset asset = new Asset(this.MxNFT.getName(), BigInteger.valueOf(1));
-//        multiAsset.getAssets().add(asset);
-        
-        /*NFT nft = NFT.create()
-                .assetName(asset.getName())
-                .name(asset.getName())
-                .image(this.MxNFT.getIPFSImage())
-                .mediaType("image/png")
-                .addFile(NFTFile.create()
-                        .name("Landano Arkly Package")
-                        .mediaType("application/gzip")
-                        .src("https://arweave.net/1IBE9yoqVSJcxZNJACpcCwuJETQB5iXayOq-1JZbIdc"))
-                .description("This is a test NFT");*/
-
-     // Assuming you have your JSON object in a variable called dataJsonObject
-//     String customJsonMetadata = JsonUtil.getPrettyJson(this.MxNFT.getJSONMetadata());
-     
-//     LOG.info(customJsonMetadata);
-     
-//        nft.property("landano_spatial_unit", customJsonMetadata);
-       /* NFTMetadata nftMetadata = NFTMetadata.create()
-        		.version("1")
-                .addNFT(policy.getPolicyId(), nft);
-        Metadata jsonMetadata = JsonNoSchemaToMetadataConverter.jsonToCborMetadata(customJsonMetadata);
-        nftMetadata.merge(jsonMetadata);
-        
-
-        Value value = Value.builder()
-                .coin(BigInteger.ZERO)
-                .multiAssets(List.of(multiAsset)).build();
-
-        TransactionOutput mintOutput = TransactionOutput.builder()
-                .address(this.ReceiverAddress)
-                .value(value).build();
-
-        TxBuilder txBuilder =
-                createFromMintOutput(mintOutput)
-                        .buildInputs(createFromSender(senderAddress, senderAddress))
-                        .andThen(mintCreator(policy.getPolicyScript(), multiAsset))
-                        .andThen(metadataProvider(nftMetadata))
-                        .andThen(balanceTx(senderAddress, 2));
-        String bfProjectId = cardanowallet.proxies.constants.Constants.getBLOCKFROST_PROJECTID();
-        BFBackendService backendService =
-		        new BFBackendService(this.blockfrostUrl, bfProjectId);
-
-        /* DefaultUtxoSupplier utxoSupplier = new DefaultUtxoSupplier(backendService.getUtxoService());
-		DefaultProtocolParamsSupplier protocolParamsSupplier = new DefaultProtocolParamsSupplier(backendService.getEpochService());
-        
-
-        Transaction signedTransaction = TxBuilderContext.init(utxoSupplier, protocolParamsSupplier)
-                .buildAndSign(txBuilder, signerFrom(sender).andThen(signerFrom(policy)));
-
-        */
-//        BigInteger qty = BigInteger.valueOf(1);
 
         Policy policy = PolicyUtil.createMultiSigScriptAllPolicy(this.MxNFT.getPolicyName(),1);
         Asset asset = new Asset(this.MxNFT.getAssetName(), BigInteger.valueOf(1));
@@ -180,14 +126,24 @@ public class JA_Mint_NFT2 extends CustomJavaAction<java.lang.String>
             // Now you can use this properties map to generate NFT metadata
             generateNFTMetadata(nft, properties);
             System.out.println(nft.toString());
-        } catch (Exception e) {
+            // Add Files
+            for (cardanowallet.proxies.NFTFile entry : this.NFTFileList) {
+            	LOG.info("FileName:::" + entry.getName());
+            	LOG.info("MediaType:::" + entry.getMediaType());
+            	LOG.info("SourceUrl:::" + entry.getSourceUrl());
+            	LOG.info("LOG::entry::::"+ entry);
+            	nft.addFile(NFTFile.create()
+            			.name(entry.getName())
+            			.mediaType(entry.getMediaType())
+            			.src(entry.getSourceUrl())
+            	);
+            }
+        } catch (Exception e) { 
             e.printStackTrace();
         }
-        
-//        NFT nft1 = generateNFTMetadata(assetName, jsonProperties);
-//		BigInteger qty = BigInteger.valueOf(1);
-//        Policy policy1 = PolicyUtil.createMultiSigScriptAllPolicy(this.MxNFT.getPolicyName(), qty.intValue());
-        NFTMetadata nftMetadata = NFTMetadata.create()
+        var version = this.MxNFT.getVersion().toString();
+		NFTMetadata nftMetadata = NFTMetadata.create()
+				.version(version)
                 .addNFT(policy.getPolicyId(), nft);
 
         Tx tx = new Tx()
@@ -248,6 +204,9 @@ public class JA_Mint_NFT2 extends CustomJavaAction<java.lang.String>
 //        Policy policy = PolicyUtil.createMultiSigScriptAllPolicy(policyName, 1);
         
 //        NFT nft = NFT.create().assetName(assetName);
+    	LOG.info("NFT Map::::::");
+    	LOG.info(nft.getMap());
+    	
         
         for (Map.Entry<String, Object> entry : properties.entrySet()) {
             String key = entry.getKey();
@@ -264,22 +223,32 @@ public class JA_Mint_NFT2 extends CustomJavaAction<java.lang.String>
                             .src(file.get("src")));
                 }
             } else if (key.equals("LA_SpatialUnit")) {
-                Map<String, Object> spatialUnit = (Map<String, Object>) value;
-                nft.property("LA_SpatialUnit", spatialUnit);
+            	LOG.info("inside LA_SpatialUnit::::");
+            	LOG.info(value);
+            	Map<String, Object> spatialUnit = (Map<String, Object>) value;
                 
                 if (spatialUnit.containsKey("ReferencePoints")) {
-                    List<Map<String, Long>> referencePoints = (List<Map<String, Long>>) spatialUnit.get("ReferencePoints");
+                    List<Map<String, Integer>> referencePoints = (List<Map<String, Integer>>) spatialUnit.get("ReferencePoints");
+                    spatialUnit.remove("ReferencePoints");
+                    nft.property("LA_SpatialUnit", spatialUnit);
                     CBORMetadataList referencePtArray = new CBORMetadataList();
-                    for (Map<String, Long> point : referencePoints) {
-                        CBORMetadataMap referencePt = new CBORMetadataMap();
-                        referencePt.put("lat", BigInteger.valueOf(point.get("lat")));
-                        referencePt.putNegative("long", BigInteger.valueOf(point.get("long")));
+                    for (Map<String, Integer> point : referencePoints) {
+                    	CBORMetadataMap referencePt = new CBORMetadataMap();
+                    	for (String pointKey : point.keySet()) {
+                    		if((Integer)point.get(pointKey) > (Integer)0) {
+                    			referencePt.put(pointKey, BigInteger.valueOf(point.get(pointKey)));
+                    		} else {                    			
+                    			referencePt.putNegative(pointKey, BigInteger.valueOf(point.get(pointKey)));
+                    		}
+                    	}
                         referencePtArray.add(referencePt);
                     }
                     
                     var map = nft.getMap();
                     var spatialUnitMap = (co.nstant.in.cbor.model.Map) map.get(new UnicodeString("LA_SpatialUnit"));
                     spatialUnitMap.put(new UnicodeString("ReferencePoints"), referencePtArray.getArray());
+                } else {
+                	nft.property("LA_SpatialUnit", spatialUnit);
                 }
             } else {
                 nft.property(key, value.toString());
@@ -344,6 +313,98 @@ public class JA_Mint_NFT2 extends CustomJavaAction<java.lang.String>
         
         return list;
     }
+    
+    /*
+     import com.bloxbean.cardano.client.api.util.PolicyUtil;
+import com.bloxbean.cardano.client.cip.cip25.NFT;
+import com.bloxbean.cardano.client.cip.cip25.NFTFile;
+import com.bloxbean.cardano.client.cip.cip25.NFTMetadata;
+import com.bloxbean.cardano.client.transaction.spec.Policy;
+import co.nstant.in.cbor.model.UnicodeString;
+import com.bloxbean.cardano.client.metadata.cbor.CBORMetadataList;
+import com.bloxbean.cardano.client.metadata.cbor.CBORMetadataMap;
+
+import java.math.BigInteger;
+import java.util.List;
+import java.util.Map;
+
+public class DynamicNFTMetadataGenerator {
+
+    public static NFTMetadata generateNFTMetadata(String policyName, String assetName, Map<String, Object> properties) {
+        Policy policy = PolicyUtil.createMultiSigScriptAllPolicy(policyName, 1);
+        
+        NFT nft = NFT.create().assetName(assetName);
+        
+        for (Map.Entry<String, Object> entry : properties.entrySet()) {
+            String key = entry.getKey();
+            Object value = entry.getValue();
+            
+            if (key.equals("files")) {
+                List<Map<String, String>> files = (List<Map<String, String>>) value;
+                for (Map<String, String> file : files) {
+                    nft.addFile(NFTFile.create()
+                            .name(file.get("name"))
+                            .mediaType(file.get("mediaType"))
+                            .src(file.get("src")));
+                }
+            } else if (key.equals("LA_SpatialUnit")) {
+                Map<String, Object> spatialUnit = (Map<String, Object>) value;
+                nft.property("LA_SpatialUnit", spatialUnit);
+                
+                if (spatialUnit.containsKey("ReferencePoints")) {
+                    List<Map<String, Integer>> referencePoints = (List<Map<String, Integer>>) spatialUnit.get("ReferencePoints");
+                    CBORMetadataList referencePtArray = new CBORMetadataList();
+                    for (Map<String, Integer> point : referencePoints) {
+                        CBORMetadataMap referencePt = new CBORMetadataMap();
+                        referencePt.put("lat", BigInteger.valueOf(point.get("lat")));
+                        referencePt.putNegative("Integer", BigInteger.valueOf(point.get("Integer")));
+                        referencePtArray.add(referencePt);
+                    }
+                    
+                    var map = nft.getMap();
+                    var spatialUnitMap = (co.nstant.in.cbor.model.Map) map.get(new UnicodeString("LA_SpatialUnit"));
+                    spatialUnitMap.put(new UnicodeString("ReferencePoints"), referencePtArray.getArray());
+                }
+            } else {
+                nft.property(key, value.toString());
+            }
+        }
+
+        return NFTMetadata.create().addNFT(policy.getPolicyId(), nft);
+    }
+
+    public static void main(String[] args) {
+        Map<String, Object> properties = Map.of(
+            "city", "SpatialUnit ABC1234",
+            "name", "SpatialUnit ABC1234",
+            "files", List.of(
+                Map.of("src", "https://arweave4.net/1IBE9yoqVSJcxZNJACpcCwuJETQB5iXayOq-1JZbIdc",
+                       "name", "Landano Arkly Package4",
+                       "mediaType", "application/gzip"),
+                Map.of("src", "https://wearehere.com/1IBE9yoqVSJcxZNJACpcCwuJETQB5iXayOq-1JZbIdc",
+                       "name", "Landano Arkly Package File 2",
+                       "mediaType", "application/gzip")
+            ),
+            "image", "ipfs://someimageurl-2",
+            "country", "country",
+            "description", "A unique spatial unit representation.",
+            "LA_SpatialUnit", Map.of(
+                "Area", "400m2",
+                "SU_ID", "SU123454",
+                "Dimension", "2D",
+                "ReferencePoints", List.of(
+                    Map.of("lat", 6733731L, "long", -1778703L),
+                    Map.of("lat", 7744731L, "long", -2878703L)
+                )
+            )
+        );
+
+        NFTMetadata nftMetadata = generateNFTMetadata("policy-ld-4", "la_spatialunit_nft_id_4", properties);
+        System.out.println(nftMetadata.toString());
+    }
+}
+     * 
+     * */
     
 	// END EXTRA CODE
 }
