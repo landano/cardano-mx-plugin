@@ -17,8 +17,11 @@ import com.mendix.systemwideinterfaces.core.IContext;
 import com.mendix.webui.CustomJavaAction;
 import com.mendix.systemwideinterfaces.core.IMendixObject;
 import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.apache.commons.lang3.SystemUtils;
 import com.bloxbean.cardano.client.api.model.Result;
 import com.bloxbean.cardano.client.backend.api.DefaultProtocolParamsSupplier;
 import com.bloxbean.cardano.client.backend.api.DefaultUtxoSupplier;
@@ -28,7 +31,10 @@ import com.bloxbean.cardano.client.cip.cip25.NFTFile;
 import com.bloxbean.cardano.client.cip.cip25.NFTMetadata;
 import com.bloxbean.cardano.client.function.TxBuilder;
 import com.bloxbean.cardano.client.function.TxBuilderContext;
+import com.bloxbean.cardano.client.function.helper.SignerProviders;
 import com.bloxbean.cardano.client.metadata.helper.JsonNoSchemaToMetadataConverter;
+import com.bloxbean.cardano.client.quicktx.QuickTxBuilder;
+import com.bloxbean.cardano.client.quicktx.Tx;
 import com.bloxbean.cardano.client.transaction.spec.Asset;
 import com.bloxbean.cardano.client.transaction.spec.MultiAsset;
 import com.bloxbean.cardano.client.transaction.spec.Policy;
@@ -48,7 +54,13 @@ import com.mendix.core.Core;
 import com.mendix.logging.ILogNode;
 import cardanowallet.EncryptDecryptMnemonic;
 import com.bloxbean.cardano.client.util.JsonUtil;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.bloxbean.cardano.client.metadata.Metadata;
+import com.bloxbean.cardano.client.metadata.cbor.CBORMetadataList;
+import com.bloxbean.cardano.client.metadata.cbor.CBORMetadataMap;
+import co.nstant.in.cbor.model.DataItem;
+import co.nstant.in.cbor.model.UnicodeString;
 
 public class JA_Mint_NFT extends CustomJavaAction<java.lang.String>
 {
@@ -60,8 +72,10 @@ public class JA_Mint_NFT extends CustomJavaAction<java.lang.String>
 	private IMendixObject __MxNFT;
 	private cardanowallet.proxies.NFT MxNFT;
 	private java.lang.String IPFSImage;
+	private java.util.List<IMendixObject> __NFTFileList;
+	private java.util.List<cardanowallet.proxies.NFTFile> NFTFileList;
 
-	public JA_Mint_NFT(IContext context, java.lang.String EncryptedMnemonic, java.lang.String Passphrase, java.lang.String ReceiverAddress, java.lang.String CardanoNetwork, java.lang.String Metadata, IMendixObject MxNFT, java.lang.String IPFSImage)
+	public JA_Mint_NFT(IContext context, java.lang.String EncryptedMnemonic, java.lang.String Passphrase, java.lang.String ReceiverAddress, java.lang.String CardanoNetwork, java.lang.String Metadata, IMendixObject MxNFT, java.lang.String IPFSImage, java.util.List<IMendixObject> NFTFileList)
 	{
 		super(context);
 		this.EncryptedMnemonic = EncryptedMnemonic;
@@ -71,6 +85,7 @@ public class JA_Mint_NFT extends CustomJavaAction<java.lang.String>
 		this.Metadata = Metadata;
 		this.__MxNFT = MxNFT;
 		this.IPFSImage = IPFSImage;
+		this.__NFTFileList = NFTFileList;
 	}
 
 	@java.lang.Override
@@ -78,85 +93,73 @@ public class JA_Mint_NFT extends CustomJavaAction<java.lang.String>
 	{
 		this.MxNFT = this.__MxNFT == null ? null : cardanowallet.proxies.NFT.initialize(getContext(), __MxNFT);
 
+		this.NFTFileList = java.util.Optional.ofNullable(this.__NFTFileList)
+			.orElse(java.util.Collections.emptyList())
+			.stream()
+			.map(__NFTFileListElement -> cardanowallet.proxies.NFTFile.initialize(getContext(), __NFTFileListElement))
+			.collect(java.util.stream.Collectors.toList());
+
 		// BEGIN USER CODE
-		// throw new com.mendix.systemwideinterfaces.MendixRuntimeException("Java action was not implemented");
-		setCardanoNetwork(CardanoNetwork.name());
+		setCardanoNetwork(CardanoNetwork.name()); //sets up blockfrostUrl and selectedNetwork, 
+		String bfProjectId = cardanowallet.proxies.constants.Constants.getBLOCKFROST_PROJECTID();
+        BFBackendService backendService = new BFBackendService(this.blockfrostUrl, bfProjectId);
+        
 		sender = new Account(this.selectedNetwork, (new EncryptDecryptMnemonic()).decrypt(this.EncryptedMnemonic, this.Passphrase));
         String senderAddress = sender.baseAddress();
         LOG.info("Sender address"+senderAddress);
 
-		String receiverAddress = this.ReceiverAddress;
-
-        Policy policy = PolicyUtil.createMultiSigScriptAllPolicy(this.MxNFT.getPolicyName(), 1);
-
-        //Multi asset and NFT metadata
-        MultiAsset multiAsset = new MultiAsset();
-        multiAsset.setPolicyId(policy.getPolicyId());
-        Asset asset = new Asset(this.MxNFT.getName(), BigInteger.valueOf(1));
-        multiAsset.getAssets().add(asset);
-        
+        Policy policy = PolicyUtil.createMultiSigScriptAllPolicy(this.MxNFT.getPolicyName(),1);
+        Asset asset = new Asset(this.MxNFT.getAssetName(), BigInteger.valueOf(1));
         NFT nft = NFT.create()
-                .assetName(asset.getName())
-                .name(asset.getName())
-                .image(this.MxNFT.getIPFSImage())
-                .mediaType("image/png")
-                .addFile(NFTFile.create()
-                        .name("Landano Arkly Package")
-                        .mediaType("application/gzip")
-                        .src("https://arweave.net/1IBE9yoqVSJcxZNJACpcCwuJETQB5iXayOq-1JZbIdc"))
-                .description("This is a test NFT");
+        		.assetName(asset.getName())
+        		.name(this.MxNFT.getName())
+        		.image(this.MxNFT.getIPFSImage())
+        		.description(this.MxNFT.getDescription());
+        
+        String stringMetadata = this.MxNFT.getJSONMetadata();
+        if(!stringMetadata.startsWith("{")) {
+        	stringMetadata = "{"+stringMetadata+"}";
+        }
+		try {
+            Map<String, Object> properties = createPropertiesFromJsonString(stringMetadata);
+            System.out.println(properties);
 
-     // Assuming you have your JSON object in a variable called dataJsonObject
-     String customJsonMetadata = JsonUtil.getPrettyJson(this.MxNFT.getJSONMetadata());
-     
-     LOG.info(customJsonMetadata);
-     
-//        nft.property("landano_spatial_unit", customJsonMetadata);
-        NFTMetadata nftMetadata = NFTMetadata.create()
-        		.version("1")
+            // Now you can use this properties map to generate NFT metadata
+            generateNFTMetadata(nft, properties);
+            System.out.println(nft.toString());
+            for (cardanowallet.proxies.NFTFile entry : this.NFTFileList) {
+            	nft.addFile(NFTFile.create()
+            			.name(entry.getName())
+            			.mediaType(entry.getMediaType())
+            			.src(entry.getSourceUrl())
+            	);
+            }
+        } catch (Exception e) { 
+            e.printStackTrace(); 
+        }
+        var version = this.MxNFT.getVersion().toString();
+		NFTMetadata nftMetadata = NFTMetadata.create()
+				.version(version)
                 .addNFT(policy.getPolicyId(), nft);
 
-        Metadata jsonMetadata = JsonNoSchemaToMetadataConverter.jsonToCborMetadata(customJsonMetadata);
-        nftMetadata.merge(jsonMetadata);
-        
+        Tx tx = new Tx()
+                .mintAssets(policy.getPolicyScript(), asset, sender.baseAddress())
+                .attachMetadata(nftMetadata)
+                .from(sender.baseAddress());
+        QuickTxBuilder quickTxBuilder = new QuickTxBuilder(backendService);
+        Result<String> result = quickTxBuilder.compose(tx)
+                .withSigner(SignerProviders.signerFrom(sender))
+                .withSigner(SignerProviders.signerFrom(policy))
+                .complete();
 
-        Value value = Value.builder()
-                .coin(BigInteger.ZERO)
-                .multiAssets(List.of(multiAsset)).build();
-
-        TransactionOutput mintOutput = TransactionOutput.builder()
-                .address(this.ReceiverAddress)
-                .value(value).build();
-
-        TxBuilder txBuilder =
-                createFromMintOutput(mintOutput)
-                        .buildInputs(createFromSender(senderAddress, senderAddress))
-                        .andThen(mintCreator(policy.getPolicyScript(), multiAsset))
-                        .andThen(metadataProvider(nftMetadata))
-                        .andThen(balanceTx(senderAddress, 2));
-        String bfProjectId = cardanowallet.proxies.constants.Constants.getBLOCKFROST_PROJECTID();
-        BFBackendService backendService =
-		        new BFBackendService(this.blockfrostUrl, bfProjectId);
-
-        DefaultUtxoSupplier utxoSupplier = new DefaultUtxoSupplier(backendService.getUtxoService());
-		DefaultProtocolParamsSupplier protocolParamsSupplier = new DefaultProtocolParamsSupplier(backendService.getEpochService());
-        
-
-        Transaction signedTransaction = TxBuilderContext.init(utxoSupplier, protocolParamsSupplier)
-                .buildAndSign(txBuilder, signerFrom(sender).andThen(signerFrom(policy)));
-
-        LOG.info(signedTransaction);
-        Result<String> result = backendService.getTransactionService().submitTransaction(signedTransaction.serialize());
-        LOG.info(result);
+        System.out.println(result);
 
         if (result.isSuccessful())
             LOG.info("Transaction Id: " + result.getValue());
         else
             LOG.info("Transaction failed: " + result);
         return result.getValue();
-
-
-		
+	
 		// END USER CODE
 	}
 
@@ -191,5 +194,124 @@ public class JA_Mint_NFT extends CustomJavaAction<java.lang.String>
 			blockfrostUrl = Constants.BLOCKFROST_MAINNET_URL;
 		}
     }
+    
+    
+    public static NFT generateNFTMetadata(NFT nft, Map<String, Object> properties) {
+    	LOG.info("NFT Map::::::");
+    	LOG.info(nft.getMap());
+    	
+        
+        for (Map.Entry<String, Object> entry : properties.entrySet()) {
+            String key = entry.getKey();
+            Object value = entry.getValue();
+            System.out.println("properties Key::"+ key);
+            System.out.println("properties Value::"+ value);
+            
+            if (value instanceof Map) {
+                CBORMetadataMap nestedMap = convertToCBORMetadataMap((Map<String, Object>) value);
+                var nftMap = nft.getMap();
+                nftMap.put(new UnicodeString(key), nestedMap.getMap());
+                
+            } else if (value instanceof List) {
+                CBORMetadataList nestedList = convertToCBORMetadataList((List<Object>) value);
+                var nftMap = nft.getMap();
+                nftMap.put(new UnicodeString(key),nestedList.getArray());
+            } else {
+                nft.property(key, value.toString());
+            }
+        }
+        
+        return nft;
+    }
+
+    private static CBORMetadataMap convertToCBORMetadataMap(Map<String, Object> map) {
+	    CBORMetadataMap cborMap = new CBORMetadataMap();
+	    System.out.println("Map::::::::");
+	    System.out.println(map);
+	    for (Map.Entry<String, Object> entry : map.entrySet()) {
+	        String key = entry.getKey();
+	        Object value = entry.getValue();
+	        if (value instanceof Map) {
+	            cborMap.put(key, convertToCBORMetadataMap((Map<String, Object>) value));
+	        } else if (value instanceof List) {
+	            cborMap.put(key, convertToCBORMetadataList((List<Object>) value));
+	        } else {
+	            cborMap.put(key, value.toString());
+	        }
+	    }
+	    return cborMap;
+	}
+    
+    private static CBORMetadataList convertToCBORMetadataList(List<Object> list) {
+	    CBORMetadataList cborList = new CBORMetadataList();
+	    System.out.println("List::::::::");
+	    System.out.println(list);
+	    for (Object item : list) {
+	        if (item instanceof Map) {
+	            cborList.add(convertToCBORMetadataMap((Map<String, Object>) item));
+	        } else if (item instanceof List) {
+	            cborList.add(convertToCBORMetadataList((List<Object>) item));
+	        } else {
+	        	System.out.println("LISTITEM TYPE::::" + item.getClass().toString());
+	            cborList.add(item.toString());
+	        }
+	    }
+	    return cborList;
+	}
+    
+    public static Map<String, Object> createPropertiesFromJsonString(String jsonString) throws Exception {
+    	System.out.println(jsonString);
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode rootNode = mapper.readTree(jsonString);
+        System.out.println(rootNode);
+        
+        return convertJsonNodeToMap(rootNode);
+    }
+
+    private static Map<String, Object> convertJsonNodeToMap(JsonNode node) {
+        Map<String, Object> map = new HashMap<>();
+        
+        node.fields().forEachRemaining(entry -> {
+            String key = entry.getKey();
+            JsonNode value = entry.getValue();
+            System.out.println("Key:::"+key);
+            System.out.println("Value::"+value);
+            
+            if (value.isObject()) {
+                map.put(key, convertJsonNodeToMap(value));
+            } else if (value.isArray()) {
+                map.put(key, convertJsonNodeToList(value));
+            } else if (value.isNumber()) {
+                map.put(key, value.numberValue());
+            } else if (value.isBoolean()) {
+                map.put(key, value.booleanValue());
+            } else {
+                map.put(key, value.asText());
+            }
+        });
+        
+        return map;
+    }
+
+    private static List<Object> convertJsonNodeToList(JsonNode node) {
+        List<Object> list = new ArrayList<>();
+        
+        for (JsonNode element : node) {
+            if (element.isObject()) {
+                list.add(convertJsonNodeToMap(element));
+            } else if (element.isArray()) {
+                list.add(convertJsonNodeToList(element));
+            } else if (element.isNumber()) {
+                list.add(element.numberValue());
+            } else if (element.isBoolean()) {
+                list.add(element.booleanValue());
+            } else {
+                list.add(element.asText());
+            }
+        }
+        
+        return list;
+    }
+    
 	// END EXTRA CODE
 }
