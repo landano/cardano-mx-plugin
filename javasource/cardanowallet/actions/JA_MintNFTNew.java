@@ -9,32 +9,31 @@
 
 package cardanowallet.actions;
 
-import static com.bloxbean.cardano.client.function.helper.AuxDataProviders.metadataProvider;
-import static com.bloxbean.cardano.client.function.helper.BalanceTxBuilders.balanceTx;
-import static com.bloxbean.cardano.client.function.helper.InputBuilders.createFromSender;
-import static com.bloxbean.cardano.client.function.helper.MintCreators.mintCreator;
-import static com.bloxbean.cardano.client.function.helper.OutputBuilders.createFromMintOutput;
-import static com.bloxbean.cardano.client.function.helper.SignerProviders.signerFrom;
+import com.bloxbean.cardano.client.account.Account;
+import com.bloxbean.cardano.client.backend.blockfrost.common.Constants;
+import com.bloxbean.cardano.client.common.model.Network;
+import com.bloxbean.cardano.client.common.model.Networks;
+import com.mendix.systemwideinterfaces.core.IContext;
+import com.mendix.webui.CustomJavaAction;
+import com.mendix.systemwideinterfaces.core.IMendixObject;
 import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import com.bloxbean.cardano.client.account.Account;
+import org.apache.commons.lang3.SystemUtils;
 import com.bloxbean.cardano.client.api.model.Result;
-import com.bloxbean.cardano.client.api.util.PolicyUtil;
 import com.bloxbean.cardano.client.backend.api.DefaultProtocolParamsSupplier;
 import com.bloxbean.cardano.client.backend.api.DefaultUtxoSupplier;
-import com.bloxbean.cardano.client.backend.blockfrost.common.Constants;
 import com.bloxbean.cardano.client.backend.blockfrost.service.BFBackendService;
 import com.bloxbean.cardano.client.cip.cip25.NFT;
 import com.bloxbean.cardano.client.cip.cip25.NFTFile;
 import com.bloxbean.cardano.client.cip.cip25.NFTMetadata;
-import com.bloxbean.cardano.client.common.model.Network;
-import com.bloxbean.cardano.client.common.model.Networks;
 import com.bloxbean.cardano.client.function.TxBuilder;
 import com.bloxbean.cardano.client.function.TxBuilderContext;
 import com.bloxbean.cardano.client.function.helper.SignerProviders;
-import com.bloxbean.cardano.client.metadata.cbor.CBORMetadataList;
-import com.bloxbean.cardano.client.metadata.cbor.CBORMetadataMap;
+import com.bloxbean.cardano.client.metadata.helper.JsonNoSchemaToMetadataConverter;
 import com.bloxbean.cardano.client.quicktx.QuickTxBuilder;
 import com.bloxbean.cardano.client.quicktx.Tx;
 import com.bloxbean.cardano.client.transaction.spec.Asset;
@@ -43,8 +42,24 @@ import com.bloxbean.cardano.client.transaction.spec.Policy;
 import com.bloxbean.cardano.client.transaction.spec.Transaction;
 import com.bloxbean.cardano.client.transaction.spec.TransactionOutput;
 import com.bloxbean.cardano.client.transaction.spec.Value;
-import com.mendix.systemwideinterfaces.core.IContext;
-import com.mendix.webui.CustomJavaAction;
+import com.bloxbean.cardano.client.api.util.PolicyUtil;
+import static com.bloxbean.cardano.client.function.helper.AuxDataProviders.metadataProvider;
+import static com.bloxbean.cardano.client.function.helper.BalanceTxBuilders.balanceTx;
+import static com.bloxbean.cardano.client.function.helper.InputBuilders.createFromSender;
+import static com.bloxbean.cardano.client.function.helper.MintCreators.mintCreator;
+import static com.bloxbean.cardano.client.function.helper.OutputBuilders.createFromMintOutput;
+import static com.bloxbean.cardano.client.function.helper.SignerProviders.signerFrom;
+import static com.bloxbean.cardano.client.common.CardanoConstants.LOVELACE;
+import static com.bloxbean.cardano.client.common.ADAConversionUtil.adaToLovelace;
+import com.mendix.core.Core;
+import com.mendix.logging.ILogNode;
+import cardanowallet.EncryptDecryptMnemonic;
+import com.bloxbean.cardano.client.util.JsonUtil;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.bloxbean.cardano.client.metadata.Metadata;
+import com.bloxbean.cardano.client.metadata.cbor.CBORMetadataList;
+import com.bloxbean.cardano.client.metadata.cbor.CBORMetadataMap;
 import co.nstant.in.cbor.model.UnicodeString;
 
 public class JA_MintNFTNew extends CustomJavaAction<java.lang.String>
@@ -58,141 +73,88 @@ public class JA_MintNFTNew extends CustomJavaAction<java.lang.String>
 	public java.lang.String executeAction() throws Exception
 	{
 		// BEGIN USER CODE
-        String senderMnemonic = "degree rice inherit lawn oyster say world mushroom city race sunset market repeat main happy image fiscal property nice forest spawn vanish table fragile";
-        Account sender = new Account(Networks.preprod(), senderMnemonic);
+		/*setCardanoNetwork(CardanoNetwork.name()); //sets up blockfrostUrl and selectedNetwork, 
+		String bfProjectId = cardanowallet.proxies.constants.Constants.getBLOCKFROST_PROJECTID();
+        BFBackendService backendService = new BFBackendService(this.blockfrostUrl, bfProjectId);
+        
+		sender = new Account(this.selectedNetwork, (new EncryptDecryptMnemonic()).decrypt(this.EncryptedMnemonic, this.Passphrase));
         String senderAddress = sender.baseAddress();
-        System.out.printf(senderAddress);
+        LOG.info("Sender address"+senderAddress);
 
-        String receiverAddress = "addr_test1qrhxkr2cp33gqdyxhpsrlmh6p0vpg7l98s2cxqyyy682v33xt2un9n7rv7xxslmlhfvfs3ugzgnzyhzun99tg2mhqrzsydpxx8";
-
-        Policy policy = PolicyUtil.createMultiSigScriptAllPolicy("policy-ld-1", 1);
-
-        //Multi asset and NFT metadata
-        MultiAsset multiAsset = new MultiAsset();
-        multiAsset.setPolicyId(policy.getPolicyId());
-        Asset asset = new Asset("TestNFT_LD2", BigInteger.valueOf(1));
-        multiAsset.getAssets().add(asset);
-
+        Policy policy = PolicyUtil.createMultiSigScriptAllPolicy(this.MxNFT.getPolicyName(),1);
+        Asset asset = new Asset(this.MxNFT.getAssetName(), BigInteger.valueOf(1));
         NFT nft = NFT.create()
-                .assetName(asset.getName())
-                .name(asset.getName())
-                .image("ipfs://Qmcv6hwtmdVumrNeb42R1KmCEWdYWGcqNgs17Y3hj6CkP4")
-                .mediaType("image/png")
-                .addFile(NFTFile.create()
-                        .name("file-1")
-                        .mediaType("image/png")
-                        .src("ipfs/Qmcv6hwtmdVumrNeb42R1KmCEWdYWGcqNgs17Y3hj6CkP4"))
-                .description("This is a test NFT1");
-
-        NFTMetadata nftMetadata = NFTMetadata.create()
-        		.version("1")
+        		.assetName(asset.getName())
+        		.name(this.MxNFT.getName())
+        		.image(this.MxNFT.getIPFSImage())
+        		.description(this.MxNFT.getDescription());
+        
+        String stringMetadata = this.MxNFT.getJSONMetadata();
+        if(!stringMetadata.startsWith("{")) {
+        	stringMetadata = "{"+stringMetadata+"}";
+        }*/
+        /*stringMetadata = """"
+        	{
+                    "town": "SpatialUnit ABC1234",
+                    "name": "SpatialUnit ABC1234",
+                    "files": [
+                      {
+                        "src": "https://arweave4.net/1IBE9yoqVSJcxZNJACpcCwuJETQB5iXayOq-1JZbIdc",
+                        "name": "Landano Arkly Package4",
+                        "mediaType": "application/gzip"
+                      },
+                      {
+                        "src": "https://wearehere.com/1IBE9yoqVSJcxZNJACpcCwuJETQB5iXayOq-1JZbIdc",
+                        "name": "Landano Arkly Package File 2",
+                        "mediaType": "application/gzip"
+                      }
+                    ],
+                    "image": "ipfs://someimageurl-2",
+                    "ensi": "country",
+                    "description": "A unique spatial unit representation.",
+                    "Farm5": {
+                      "chicken": "400m2",
+                      "dog": "SU123454",
+                      "math": "2D",
+                      "brain": [
+                        {
+                          "eyes": "two eyes",
+                          "nose": "two nostrils",
+                          "ears": "two"
+                        },
+                        {'p yyyyyyyyyycs    34edc bbyh'
+                          "eyes": "",
+                          "nose": "",
+                          "teeth": 32
+                        }
+                      ]
+                    }
+                  }
+        """;*/
+       /* var version = this.MxNFT.getVersion().toString();
+		NFTMetadata nftMetadata = NFTMetadata.create()
+				.version(version)
                 .addNFT(policy.getPolicyId(), nft);
 
-        Value value = Value.builder()
-                .coin(BigInteger.ZERO)
-                .multiAssets(List.of(multiAsset)).build();
-
-        TransactionOutput mintOutput = TransactionOutput.builder()
-                .address(receiverAddress)
-                .value(value).build();
-
-        TxBuilder txBuilder =
-                createFromMintOutput(mintOutput)
-                        .buildInputs(createFromSender(senderAddress, senderAddress))
-                        .andThen(mintCreator(policy.getPolicyScript(), multiAsset))
-                        .andThen(metadataProvider(nftMetadata))
-                        .andThen(balanceTx(senderAddress, 2));
-
-		String blockfrostUrl;
-		Network selectedNetwork;
-
-		String networkString = "preprod";
-		if(networkString.equalsIgnoreCase("preprod")) {
-			selectedNetwork = Networks.preprod();
-			blockfrostUrl = Constants.BLOCKFROST_PREPROD_URL;
-		} else if(networkString.equalsIgnoreCase("testnet")) {
-			selectedNetwork = Networks.testnet();
-			blockfrostUrl = Constants.BLOCKFROST_TESTNET_URL;
-		} else if(networkString.equalsIgnoreCase("preview")) {
-			blockfrostUrl = Constants.BLOCKFROST_PREVIEW_URL;
-			selectedNetwork = Networks.preview();
-		} else {
-			selectedNetwork = Networks.mainnet();
-			blockfrostUrl = Constants.BLOCKFROST_MAINNET_URL;
-		}
-
-		String bfProjectId = cardanowallet.proxies.constants.Constants.getBLOCKFROST_PROJECTID();		
-        BFBackendService backendService =
-		        new BFBackendService(blockfrostUrl, bfProjectId);
-
-        DefaultUtxoSupplier utxoSupplier = new DefaultUtxoSupplier(backendService.getUtxoService());
-		DefaultProtocolParamsSupplier protocolParamsSupplier = new DefaultProtocolParamsSupplier(backendService.getEpochService());
-        
-
-        Transaction signedTransaction = TxBuilderContext.init(utxoSupplier, protocolParamsSupplier)
-                .buildAndSign(txBuilder, signerFrom(sender).andThen(signerFrom(policy)));
-
-        System.out.println(signedTransaction);
-        Result<String> result = backendService.getTransactionService().submitTransaction(signedTransaction.serialize());
-        System.out.println(result);
-        
-
-        if (result.isSuccessful())
-            System.out.println("Transaction Id: " + result.getValue());
-        else
-            System.out.println("Transaction failed: " + result);
-        String resultNFT1 = result.getValue();
-//        ================================================================
-//        =========================NFT2===================================
-        Policy policy1 = PolicyUtil.createMultiSigScriptAllPolicy("policy-ld-2", 1);
-        String assetName = "la_spatialunit_nft_id_2"; //+ String.valueOf(Math.random());
-        BigInteger qty = BigInteger.valueOf(1);
-        NFT nft1 = NFT.create()
-                .assetName(assetName)
-                .name("SpatialUnit ABC123")
-                .property("city", "SpatialUnit ABC123")
-                .property("country", "country")
-                .description("A unique spatial unit representation.")
-                .image("ipfs://someimageurl-1")
-                .property("LA_SpatialUnit", Map.of(
-                        "SU_ID", "SU12345",
-                        "Area", "500m2",
-                        "Dimension", "2D"
-                ))
-                .addFile(NFTFile.create()
-                        .name("Landano Arkly Package")
-                        .mediaType("application/gzip")
-                        .src("https://arweave.net/1IBE9yoqVSJcxZNJACpcCwuJETQB5iXayOq-1JZbIdc"));
-
-        var map = nft1.getMap();
-        var spatialUnitMap = (co.nstant.in.cbor.model.Map) map.get(new UnicodeString("LA_SpatialUnit"));
-
-        //Create a reference point array
-        CBORMetadataList referencePtArray = new CBORMetadataList();
-        CBORMetadataMap referencePt1 = new CBORMetadataMap();
-        referencePt1.put("lat", BigInteger.valueOf(6733731));
-        referencePt1.putNegative("long", BigInteger.valueOf(-1778703));
-        referencePtArray.add(referencePt1);
-
-        spatialUnitMap.put(new UnicodeString("ReferencePoints"), referencePtArray.getArray());
-
-        NFTMetadata nftMetadata1 = NFTMetadata.create()
-                .addNFT(policy1.getPolicyId(), nft1);
-
         Tx tx = new Tx()
-                .mintAssets(policy1.getPolicyScript(), new Asset(assetName, qty), sender.baseAddress())
-                .attachMetadata(nftMetadata1)
+                .mintAssets(policy.getPolicyScript(), asset, sender.baseAddress())
+                .attachMetadata(nftMetadata) 
                 .from(sender.baseAddress());
         QuickTxBuilder quickTxBuilder = new QuickTxBuilder(backendService);
-        Result<String> result1 = quickTxBuilder.compose(tx)
+        Result<String> result = quickTxBuilder.compose(tx)
                 .withSigner(SignerProviders.signerFrom(sender))
-                .withSigner(SignerProviders.signerFrom(policy1))
+                .withSigner(SignerProviders.signerFrom(policy))
                 .complete();
 
-        System.out.println(result1);
-        String resultNFT2 = result1.getValue();
-        
-        return "RESULT1: "+resultNFT1 + "\n RESULT2: "+resultNFT2;
+        System.out.println(result);
+
+        if (result.isSuccessful())
+            LOG.info("Transaction Id: " + result.getValue());
+        else
+            LOG.info("Transaction failed: " + result);
+        return result.getValue();*/
+		return "";
+	
 		// END USER CODE
 	}
 
@@ -207,5 +169,268 @@ public class JA_MintNFTNew extends CustomJavaAction<java.lang.String>
 	}
 
 	// BEGIN EXTRA CODE
+	private Network selectedNetwork;
+    private String blockfrostUrl = Constants.BLOCKFROST_MAINNET_URL;
+	private Account sender;
+    public static ILogNode LOG = Core.getLogger("LandanoTest - NFT Creation");
+
+    public void setCardanoNetwork(String networkString) {
+        if(networkString.equalsIgnoreCase("preprod")) {
+			selectedNetwork = Networks.preprod();
+			blockfrostUrl = Constants.BLOCKFROST_PREPROD_URL;
+		} else if(networkString.equalsIgnoreCase("testnet")) {
+			selectedNetwork = Networks.testnet();
+			blockfrostUrl = Constants.BLOCKFROST_TESTNET_URL;
+		} else if(networkString.equalsIgnoreCase("preview")) {
+			blockfrostUrl = Constants.BLOCKFROST_PREVIEW_URL;
+			selectedNetwork = Networks.preview();
+		} else {
+			selectedNetwork = Networks.mainnet();
+			blockfrostUrl = Constants.BLOCKFROST_MAINNET_URL;
+		}
+    }
+    
+    
+    public static NFT generateNFTMetadata(NFT nft, Map<String, Object> properties) {
+//        Policy policy = PolicyUtil.createMultiSigScriptAllPolicy(policyName, 1);
+        
+//        NFT nft = NFT.create().assetName(assetName);
+    	LOG.info("NFT Map::::::");
+    	LOG.info(nft.getMap());
+
+    	for (Map.Entry<String, Object> entry : properties.entrySet()) {
+            String key = entry.getKey();
+            Object value = entry.getValue();
+            
+            if (key.equals("files") && value instanceof List) {
+                List<Map<String, Object>> files = (List<Map<String, Object>>) value;
+                for (Map<String, Object> file : files) {
+                    nft.addFile(NFTFile.create()
+                            .name((String) file.get("name"))
+                            .mediaType((String) file.get("mediaType"))
+                            .src((String) file.get("src")));
+                }
+            } else if (value instanceof Map) {
+                nft.property(key, (Map<String, Object>) value);
+            } else if (value instanceof List) {
+//                nft.property(key, (List<Object>) value);
+            } else {
+                nft.property(key, value.toString());
+            }
+        }
+        return nft;
+    }
+    
+    public static Map<String, Object> createPropertiesFromJsonString(String jsonString) throws Exception {
+    	System.out.println(jsonString);
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode rootNode = mapper.readTree(jsonString);
+        System.out.println(rootNode);
+        
+        return convertJsonNodeToMap(rootNode);
+    }
+
+    private static Map<String, Object> convertJsonNodeToMap(JsonNode node) {
+        Map<String, Object> map = new HashMap<>();
+        
+        Iterator<Map.Entry<String, JsonNode>> fields = node.fields();
+        while (fields.hasNext()) {
+            Map.Entry<String, JsonNode> entry = fields.next();
+            String key = entry.getKey();
+            JsonNode value = entry.getValue();
+            
+            map.put(key, convertJsonNodeToObject(value));
+        }
+        
+        return map;
+    }
+    
+    private static Object convertJsonNodeToObject(JsonNode node) {
+        if (node.isObject()) {
+            return convertJsonNodeToMap(node);
+        } else if (node.isArray()) {
+            List<Object> list = new ArrayList<>();
+            for (JsonNode element : node) {
+                list.add(convertJsonNodeToObject(element));
+            }
+            return list;
+        } else if (node.isNumber()) {
+            return node.numberValue();
+        } else if (node.isBoolean()) {
+            return node.booleanValue();
+        } else if (node.isNull()) {
+            return null;
+        } else {
+            return node.asText();
+        }
+    }
+
+    private static List<Object> convertJsonNodeToList(JsonNode node) {
+        List<Object> list = new ArrayList<>();
+        
+        for (JsonNode element : node) {
+            if (element.isObject()) {
+                list.add(convertJsonNodeToMap(element));
+            } else if (element.isArray()) {
+                list.add(convertJsonNodeToList(element));
+            } else if (element.isNumber()) {
+                list.add(element.numberValue());
+            } else if (element.isBoolean()) {
+                list.add(element.booleanValue());
+            } else {
+                list.add(element.asText());
+            }
+        }
+        
+        return list;
+    }
+    
+    /*
+     import com.bloxbean.cardano.client.api.util.PolicyUtil;
+import com.bloxbean.cardano.client.cip.cip25.NFT;
+import com.bloxbean.cardano.client.cip.cip25.NFTFile;
+import com.bloxbean.cardano.client.cip.cip25.NFTMetadata;
+import com.bloxbean.cardano.client.transaction.spec.Policy;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.core.JsonProcessingException;
+
+import java.math.BigInteger;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Iterator;
+
+public class DynamicNFTMetadataGenerator {
+
+    public static Map<String, Object> createPropertiesFromJsonString(String jsonString) throws JsonProcessingException {
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode rootNode = mapper.readTree(jsonString);
+        
+        return convertJsonNodeToMap(rootNode);
+    }
+
+    private static Map<String, Object> convertJsonNodeToMap(JsonNode node) {
+        Map<String, Object> map = new HashMap<>();
+        
+        Iterator<Map.Entry<String, JsonNode>> fields = node.fields();
+        while (fields.hasNext()) {
+            Map.Entry<String, JsonNode> entry = fields.next();
+            String key = entry.getKey();
+            JsonNode value = entry.getValue();
+            
+            map.put(key, convertJsonNodeToObject(value));
+        }
+        
+        return map;
+    }
+
+    private static Object convertJsonNodeToObject(JsonNode node) {
+        if (node.isObject()) {
+            return convertJsonNodeToMap(node);
+        } else if (node.isArray()) {
+            List<Object> list = new ArrayList<>();
+            for (JsonNode element : node) {
+                list.add(convertJsonNodeToObject(element));
+            }
+            return list;
+        } else if (node.isNumber()) {
+            return node.numberValue();
+        } else if (node.isBoolean()) {
+            return node.booleanValue();
+        } else if (node.isNull()) {
+            return null;
+        } else {
+            return node.asText();
+        }
+    }
+
+    public static NFTMetadata generateNFTMetadata(String policyName, String assetName, Map<String, Object> properties) {
+        Policy policy = PolicyUtil.createMultiSigScriptAllPolicy(policyName, 1);
+        
+        NFT nft = NFT.create().assetName(assetName);
+        
+        for (Map.Entry<String, Object> entry : properties.entrySet()) {
+            String key = entry.getKey();
+            Object value = entry.getValue();
+            
+            if (key.equals("files") && value instanceof List) {
+                List<Map<String, Object>> files = (List<Map<String, Object>>) value;
+                for (Map<String, Object> file : files) {
+                    nft.addFile(NFTFile.create()
+                            .name((String) file.get("name"))
+                            .mediaType((String) file.get("mediaType"))
+                            .src((String) file.get("src")));
+                }
+            } else if (value instanceof Map) {
+                nft.property(key, (Map<String, Object>) value);
+            } else if (value instanceof List) {
+                nft.property(key, (List<Object>) value);
+            } else {
+                nft.property(key, value.toString());
+            }
+        }
+
+        return NFTMetadata.create().addNFT(policy.getPolicyId(), nft);
+    }
+
+    public static void main(String[] args) {
+        String jsonString = """
+        {
+          "la_spatialunit_nft_id_6": {
+            "town": "SpatialUnit ABC1234",
+            "name": "SpatialUnit ABC1234",
+            "files": [
+              {
+                "src": "https://arweave4.net/1IBE9yoqVSJcxZNJACpcCwuJETQB5iXayOq-1JZbIdc",
+                "name": "Landano Arkly Package4",
+                "mediaType": "application/gzip"
+              },
+              {
+                "src": "https://wearehere.com/1IBE9yoqVSJcxZNJACpcCwuJETQB5iXayOq-1JZbIdc",
+                "name": "Landano Arkly Package File 2",
+                "mediaType": "application/gzip"
+              }
+            ],
+            "image": "ipfs://someimageurl-2",
+            "ensi": "country",
+            "description": "A unique spatial unit representation.",
+            "Farm5": {
+              "chicken": "400m2",
+              "dog": "SU123454",
+              "math": "2D",
+              "brain": [
+                {
+                  "eyes": "two eyes",
+                  "nose": "two nostrils",
+                  "ears": "two"
+                },
+                {
+                  "eyes": "",
+                  "nose": "",
+                  "teeth": 32
+                }
+              ]
+            }
+          }
+        }
+        """;
+
+        try {
+            Map<String, Object> properties = createPropertiesFromJsonString(jsonString);
+            String assetName = properties.keySet().iterator().next(); // Get the first (and only) key
+            Map<String, Object> nftProperties = (Map<String, Object>) properties.get(assetName);
+            
+            NFTMetadata nftMetadata = generateNFTMetadata("policy-ld-6", assetName, nftProperties);
+            System.out.println(nftMetadata.toString());
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+    }
+}
+     * 
+     * */
+    
 	// END EXTRA CODE
 }
