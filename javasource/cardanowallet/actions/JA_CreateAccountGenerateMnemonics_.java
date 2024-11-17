@@ -39,22 +39,27 @@ import com.mendix.systemwideinterfaces.core.IMendixObject;
 
 public class JA_CreateAccountGenerateMnemonics_ extends CustomJavaAction<IMendixObject>
 {
-	private IMendixObject __Wallet;
-	private cardanowallet.proxies.WalletAPI Wallet;
-	private java.lang.String CARDANONETWORK;
+	/** @deprecated use Wallet.getMendixObject() instead. */
+	@java.lang.Deprecated(forRemoval = true)
+	private final IMendixObject __Wallet;
+	private final cardanowallet.proxies.WalletAPI Wallet;
+	private final java.lang.String CARDANONETWORK;
 
-	public JA_CreateAccountGenerateMnemonics_(IContext context, IMendixObject Wallet, java.lang.String CARDANONETWORK)
+	public JA_CreateAccountGenerateMnemonics_(
+		IContext context,
+		IMendixObject _wallet,
+		java.lang.String _cARDANONETWORK
+	)
 	{
 		super(context);
-		this.__Wallet = Wallet;
-		this.CARDANONETWORK = CARDANONETWORK;
+		this.__Wallet = _wallet;
+		this.Wallet = _wallet == null ? null : cardanowallet.proxies.WalletAPI.initialize(getContext(), _wallet);
+		this.CARDANONETWORK = _cARDANONETWORK;
 	}
 
 	@java.lang.Override
 	public IMendixObject executeAction() throws Exception
 	{
-		this.Wallet = this.__Wallet == null ? null : cardanowallet.proxies.WalletAPI.initialize(getContext(), __Wallet);
-
 		// BEGIN USER CODE
 		//create a wallet -> create accounts and attach them to this wallet-> generate mnenomics (recovery phrase)
 		// confirm that I confirm that nobody can see my screen, because anyone who knows my recovery phrase will be able to spend the funds in my wallet.

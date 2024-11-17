@@ -14,16 +14,21 @@ import com.mendix.webui.CustomJavaAction;
 
 public class JA_MultiSign_Signing extends CustomJavaAction<java.lang.Boolean>
 {
-	private java.lang.String WalletPin;
-	private java.lang.String WitnessAddress;
-	private java.lang.String PolicyAddress;
+	private final java.lang.String WalletPin;
+	private final java.lang.String WitnessAddress;
+	private final java.lang.String PolicyAddress;
 
-	public JA_MultiSign_Signing(IContext context, java.lang.String WalletPin, java.lang.String WitnessAddress, java.lang.String PolicyAddress)
+	public JA_MultiSign_Signing(
+		IContext context,
+		java.lang.String _walletPin,
+		java.lang.String _witnessAddress,
+		java.lang.String _policyAddress
+	)
 	{
 		super(context);
-		this.WalletPin = WalletPin;
-		this.WitnessAddress = WitnessAddress;
-		this.PolicyAddress = PolicyAddress;
+		this.WalletPin = _walletPin;
+		this.WitnessAddress = _witnessAddress;
+		this.PolicyAddress = _policyAddress;
 	}
 
 	@java.lang.Override

@@ -19,20 +19,24 @@ import com.mendix.systemwideinterfaces.core.*;
 
 public class JA_CreateAccountMnemonic extends CustomJavaAction<IMendixObject>
 {
-	private IMendixObject __WalletAPI;
-	private cardanowallet.proxies.WalletAPI WalletAPI;
+	/** @deprecated use WalletAPI.getMendixObject() instead. */
+	@java.lang.Deprecated(forRemoval = true)
+	private final IMendixObject __WalletAPI;
+	private final cardanowallet.proxies.WalletAPI WalletAPI;
 
-	public JA_CreateAccountMnemonic(IContext context, IMendixObject WalletAPI)
+	public JA_CreateAccountMnemonic(
+		IContext context,
+		IMendixObject _walletAPI
+	)
 	{
 		super(context);
-		this.__WalletAPI = WalletAPI;
+		this.__WalletAPI = _walletAPI;
+		this.WalletAPI = _walletAPI == null ? null : cardanowallet.proxies.WalletAPI.initialize(getContext(), _walletAPI);
 	}
 
 	@java.lang.Override
 	public IMendixObject executeAction() throws Exception
 	{
-		this.WalletAPI = this.__WalletAPI == null ? null : cardanowallet.proxies.WalletAPI.initialize(getContext(), __WalletAPI);
-
 		// BEGIN USER CODE
 		Network selectedNetwork;
 		String networkString = this.WalletAPI.getCardanoNetwork().name();

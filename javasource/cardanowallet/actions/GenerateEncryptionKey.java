@@ -20,12 +20,15 @@ import com.mendix.webui.CustomJavaAction;
  */
 public class GenerateEncryptionKey extends CustomJavaAction<java.lang.String>
 {
-	private java.lang.String Passphrase;
+	private final java.lang.String Passphrase;
 
-	public GenerateEncryptionKey(IContext context, java.lang.String Passphrase)
+	public GenerateEncryptionKey(
+		IContext context,
+		java.lang.String _passphrase
+	)
 	{
 		super(context);
-		this.Passphrase = Passphrase;
+		this.Passphrase = _passphrase;
 	}
 
 	@java.lang.Override

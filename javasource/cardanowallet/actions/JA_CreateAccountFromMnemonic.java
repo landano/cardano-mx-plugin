@@ -21,14 +21,18 @@ import com.mendix.systemwideinterfaces.core.*;
 
 public class JA_CreateAccountFromMnemonic extends CustomJavaAction<IMendixObject>
 {
-	private java.lang.String mnemonic;
-	private cardanowallet.proxies.Enum_CardanoNetwork CardanoNetworkEnum;
+	private final java.lang.String mnemonic;
+	private final cardanowallet.proxies.Enum_CardanoNetwork CardanoNetworkEnum;
 
-	public JA_CreateAccountFromMnemonic(IContext context, java.lang.String mnemonic, java.lang.String CardanoNetworkEnum)
+	public JA_CreateAccountFromMnemonic(
+		IContext context,
+		java.lang.String _mnemonic,
+		java.lang.String _cardanoNetworkEnum
+	)
 	{
 		super(context);
-		this.mnemonic = mnemonic;
-		this.CardanoNetworkEnum = CardanoNetworkEnum == null ? null : cardanowallet.proxies.Enum_CardanoNetwork.valueOf(CardanoNetworkEnum);
+		this.mnemonic = _mnemonic;
+		this.CardanoNetworkEnum = _cardanoNetworkEnum == null ? null : cardanowallet.proxies.Enum_CardanoNetwork.valueOf(_cardanoNetworkEnum);
 	}
 
 	@java.lang.Override

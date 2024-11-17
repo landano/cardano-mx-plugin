@@ -64,41 +64,53 @@ import co.nstant.in.cbor.model.UnicodeString;
 
 public class JA_Mint_NFT extends CustomJavaAction<java.lang.String>
 {
-	private java.lang.String EncryptedMnemonic;
-	private java.lang.String Passphrase;
-	private java.lang.String ReceiverAddress;
-	private cardanowallet.proxies.Enum_CardanoNetwork CardanoNetwork;
-	private java.lang.String Metadata;
-	private IMendixObject __MxNFT;
-	private cardanowallet.proxies.NFT MxNFT;
-	private java.lang.String IPFSImage;
-	private java.util.List<IMendixObject> __NFTFileList;
-	private java.util.List<cardanowallet.proxies.NFTFile> NFTFileList;
+	private final java.lang.String EncryptedMnemonic;
+	private final java.lang.String Passphrase;
+	private final java.lang.String ReceiverAddress;
+	private final cardanowallet.proxies.Enum_CardanoNetwork CardanoNetwork;
+	private final java.lang.String Metadata;
+	/** @deprecated use MxNFT.getMendixObject() instead. */
+	@java.lang.Deprecated(forRemoval = true)
+	private final IMendixObject __MxNFT;
+	private final cardanowallet.proxies.NFT MxNFT;
+	private final java.lang.String IPFSImage;
+	/** @deprecated use com.mendix.utils.ListUtils.map(NFTFileList, com.mendix.systemwideinterfaces.core.IEntityProxy::getMendixObject) instead. */
+	@java.lang.Deprecated(forRemoval = true)
+	private final java.util.List<IMendixObject> __NFTFileList;
+	private final java.util.List<cardanowallet.proxies.NFTFile> NFTFileList;
 
-	public JA_Mint_NFT(IContext context, java.lang.String EncryptedMnemonic, java.lang.String Passphrase, java.lang.String ReceiverAddress, java.lang.String CardanoNetwork, java.lang.String Metadata, IMendixObject MxNFT, java.lang.String IPFSImage, java.util.List<IMendixObject> NFTFileList)
+	public JA_Mint_NFT(
+		IContext context,
+		java.lang.String _encryptedMnemonic,
+		java.lang.String _passphrase,
+		java.lang.String _receiverAddress,
+		java.lang.String _cardanoNetwork,
+		java.lang.String _metadata,
+		IMendixObject _mxNFT,
+		java.lang.String _iPFSImage,
+		java.util.List<IMendixObject> _nFTFileList
+	)
 	{
 		super(context);
-		this.EncryptedMnemonic = EncryptedMnemonic;
-		this.Passphrase = Passphrase;
-		this.ReceiverAddress = ReceiverAddress;
-		this.CardanoNetwork = CardanoNetwork == null ? null : cardanowallet.proxies.Enum_CardanoNetwork.valueOf(CardanoNetwork);
-		this.Metadata = Metadata;
-		this.__MxNFT = MxNFT;
-		this.IPFSImage = IPFSImage;
-		this.__NFTFileList = NFTFileList;
+		this.EncryptedMnemonic = _encryptedMnemonic;
+		this.Passphrase = _passphrase;
+		this.ReceiverAddress = _receiverAddress;
+		this.CardanoNetwork = _cardanoNetwork == null ? null : cardanowallet.proxies.Enum_CardanoNetwork.valueOf(_cardanoNetwork);
+		this.Metadata = _metadata;
+		this.__MxNFT = _mxNFT;
+		this.MxNFT = _mxNFT == null ? null : cardanowallet.proxies.NFT.initialize(getContext(), _mxNFT);
+		this.IPFSImage = _iPFSImage;
+		this.__NFTFileList = _nFTFileList;
+		this.NFTFileList = java.util.Optional.ofNullable(_nFTFileList)
+			.orElse(java.util.Collections.emptyList())
+			.stream()
+			.map(nFTFileListElement -> cardanowallet.proxies.NFTFile.initialize(getContext(), nFTFileListElement))
+			.collect(java.util.stream.Collectors.toList());
 	}
 
 	@java.lang.Override
 	public java.lang.String executeAction() throws Exception
 	{
-		this.MxNFT = this.__MxNFT == null ? null : cardanowallet.proxies.NFT.initialize(getContext(), __MxNFT);
-
-		this.NFTFileList = java.util.Optional.ofNullable(this.__NFTFileList)
-			.orElse(java.util.Collections.emptyList())
-			.stream()
-			.map(__NFTFileListElement -> cardanowallet.proxies.NFTFile.initialize(getContext(), __NFTFileListElement))
-			.collect(java.util.stream.Collectors.toList());
-
 		// BEGIN USER CODE
 		setCardanoNetwork(CardanoNetwork.name()); //sets up blockfrostUrl and selectedNetwork, 
 		String bfProjectId = cardanowallet.proxies.constants.Constants.getBLOCKFROST_PROJECTID();

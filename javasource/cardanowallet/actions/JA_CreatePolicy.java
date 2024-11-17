@@ -20,29 +20,35 @@ import com.mendix.systemwideinterfaces.core.IMendixObject;
 
 public class JA_CreatePolicy extends CustomJavaAction<IMendixObject>
 {
-	private java.util.List<IMendixObject> __WitnessList;
-	private java.util.List<cardanowallet.proxies.Witness> WitnessList;
-	private IMendixObject __Policy;
-	private cardanowallet.proxies.Policy Policy;
+	/** @deprecated use com.mendix.utils.ListUtils.map(WitnessList, com.mendix.systemwideinterfaces.core.IEntityProxy::getMendixObject) instead. */
+	@java.lang.Deprecated(forRemoval = true)
+	private final java.util.List<IMendixObject> __WitnessList;
+	private final java.util.List<cardanowallet.proxies.Witness> WitnessList;
+	/** @deprecated use Policy.getMendixObject() instead. */
+	@java.lang.Deprecated(forRemoval = true)
+	private final IMendixObject __Policy;
+	private final cardanowallet.proxies.Policy Policy;
 
-	public JA_CreatePolicy(IContext context, java.util.List<IMendixObject> WitnessList, IMendixObject Policy)
+	public JA_CreatePolicy(
+		IContext context,
+		java.util.List<IMendixObject> _witnessList,
+		IMendixObject _policy
+	)
 	{
 		super(context);
-		this.__WitnessList = WitnessList;
-		this.__Policy = Policy;
+		this.__WitnessList = _witnessList;
+		this.WitnessList = java.util.Optional.ofNullable(_witnessList)
+			.orElse(java.util.Collections.emptyList())
+			.stream()
+			.map(witnessListElement -> cardanowallet.proxies.Witness.initialize(getContext(), witnessListElement))
+			.collect(java.util.stream.Collectors.toList());
+		this.__Policy = _policy;
+		this.Policy = _policy == null ? null : cardanowallet.proxies.Policy.initialize(getContext(), _policy);
 	}
 
 	@java.lang.Override
 	public IMendixObject executeAction() throws Exception
 	{
-		this.WitnessList = java.util.Optional.ofNullable(this.__WitnessList)
-			.orElse(java.util.Collections.emptyList())
-			.stream()
-			.map(__WitnessListElement -> cardanowallet.proxies.Witness.initialize(getContext(), __WitnessListElement))
-			.collect(java.util.stream.Collectors.toList());
-
-		this.Policy = this.__Policy == null ? null : cardanowallet.proxies.Policy.initialize(getContext(), __Policy);
-
 		// BEGIN USER CODE
 		ScriptAtLeast scriptAtLeast = new ScriptAtLeast(this.Policy.getAllowedWitnesses());
 

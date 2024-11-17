@@ -35,20 +35,27 @@ import com.mendix.logging.ILogNode;
 
 public class JA_CardanoTransaction_UnSigned extends CustomJavaAction<java.lang.String>
 {
-	private java.lang.String SenderAddress;
-	private java.lang.String ReceiverAddress;
-	private java.math.BigDecimal AmountInAda;
-	private cardanowallet.proxies.Enum_CardanoNetwork CardanoNetwork;
-	private java.lang.String TransactionMetaData;
+	private final java.lang.String SenderAddress;
+	private final java.lang.String ReceiverAddress;
+	private final java.math.BigDecimal AmountInAda;
+	private final cardanowallet.proxies.Enum_CardanoNetwork CardanoNetwork;
+	private final java.lang.String TransactionMetaData;
 
-	public JA_CardanoTransaction_UnSigned(IContext context, java.lang.String SenderAddress, java.lang.String ReceiverAddress, java.math.BigDecimal AmountInAda, java.lang.String CardanoNetwork, java.lang.String TransactionMetaData)
+	public JA_CardanoTransaction_UnSigned(
+		IContext context,
+		java.lang.String _senderAddress,
+		java.lang.String _receiverAddress,
+		java.math.BigDecimal _amountInAda,
+		java.lang.String _cardanoNetwork,
+		java.lang.String _transactionMetaData
+	)
 	{
 		super(context);
-		this.SenderAddress = SenderAddress;
-		this.ReceiverAddress = ReceiverAddress;
-		this.AmountInAda = AmountInAda;
-		this.CardanoNetwork = CardanoNetwork == null ? null : cardanowallet.proxies.Enum_CardanoNetwork.valueOf(CardanoNetwork);
-		this.TransactionMetaData = TransactionMetaData;
+		this.SenderAddress = _senderAddress;
+		this.ReceiverAddress = _receiverAddress;
+		this.AmountInAda = _amountInAda;
+		this.CardanoNetwork = _cardanoNetwork == null ? null : cardanowallet.proxies.Enum_CardanoNetwork.valueOf(_cardanoNetwork);
+		this.TransactionMetaData = _transactionMetaData;
 	}
 
 	@java.lang.Override

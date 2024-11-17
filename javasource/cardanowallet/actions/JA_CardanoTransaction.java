@@ -36,22 +36,30 @@ import cardanowallet.EncryptDecryptMnemonic;
 
 public class JA_CardanoTransaction extends CustomJavaAction<java.lang.String>
 {
-	private java.lang.String ReceiverAddress;
-	private java.math.BigDecimal Amount;
-	private cardanowallet.proxies.Enum_CardanoNetwork CardanoNetwork;
-	private java.lang.String EncryptedMnemonic;
-	private java.lang.String Passphrase;
-	private java.lang.String TransactionMetaData;
+	private final java.lang.String ReceiverAddress;
+	private final java.math.BigDecimal Amount;
+	private final cardanowallet.proxies.Enum_CardanoNetwork CardanoNetwork;
+	private final java.lang.String EncryptedMnemonic;
+	private final java.lang.String Passphrase;
+	private final java.lang.String TransactionMetaData;
 
-	public JA_CardanoTransaction(IContext context, java.lang.String ReceiverAddress, java.math.BigDecimal Amount, java.lang.String CardanoNetwork, java.lang.String EncryptedMnemonic, java.lang.String Passphrase, java.lang.String TransactionMetaData)
+	public JA_CardanoTransaction(
+		IContext context,
+		java.lang.String _receiverAddress,
+		java.math.BigDecimal _amount,
+		java.lang.String _cardanoNetwork,
+		java.lang.String _encryptedMnemonic,
+		java.lang.String _passphrase,
+		java.lang.String _transactionMetaData
+	)
 	{
 		super(context);
-		this.ReceiverAddress = ReceiverAddress;
-		this.Amount = Amount;
-		this.CardanoNetwork = CardanoNetwork == null ? null : cardanowallet.proxies.Enum_CardanoNetwork.valueOf(CardanoNetwork);
-		this.EncryptedMnemonic = EncryptedMnemonic;
-		this.Passphrase = Passphrase;
-		this.TransactionMetaData = TransactionMetaData;
+		this.ReceiverAddress = _receiverAddress;
+		this.Amount = _amount;
+		this.CardanoNetwork = _cardanoNetwork == null ? null : cardanowallet.proxies.Enum_CardanoNetwork.valueOf(_cardanoNetwork);
+		this.EncryptedMnemonic = _encryptedMnemonic;
+		this.Passphrase = _passphrase;
+		this.TransactionMetaData = _transactionMetaData;
 	}
 
 	@java.lang.Override

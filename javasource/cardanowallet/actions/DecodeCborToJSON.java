@@ -18,12 +18,15 @@ import com.mendix.webui.CustomJavaAction;
 
 public class DecodeCborToJSON extends CustomJavaAction<java.lang.String>
 {
-	private java.lang.String CBORHexString;
+	private final java.lang.String CBORHexString;
 
-	public DecodeCborToJSON(IContext context, java.lang.String CBORHexString)
+	public DecodeCborToJSON(
+		IContext context,
+		java.lang.String _cBORHexString
+	)
 	{
 		super(context);
-		this.CBORHexString = CBORHexString;
+		this.CBORHexString = _cBORHexString;
 	}
 
 	@java.lang.Override

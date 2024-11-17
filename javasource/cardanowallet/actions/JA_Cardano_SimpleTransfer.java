@@ -32,12 +32,15 @@ import com.mendix.webui.CustomJavaAction;
 
 public class JA_Cardano_SimpleTransfer extends CustomJavaAction<java.lang.String>
 {
-	private java.lang.String senderMnemonic;
+	private final java.lang.String senderMnemonic;
 
-	public JA_Cardano_SimpleTransfer(IContext context, java.lang.String senderMnemonic)
+	public JA_Cardano_SimpleTransfer(
+		IContext context,
+		java.lang.String _senderMnemonic
+	)
 	{
 		super(context);
-		this.senderMnemonic = senderMnemonic;
+		this.senderMnemonic = _senderMnemonic;
 	}
 
 	@java.lang.Override

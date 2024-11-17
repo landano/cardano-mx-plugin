@@ -36,20 +36,24 @@ import java.util.List;
 
 public class JA_GetAccountBalances extends CustomJavaAction<java.lang.Void>
 {
-	private IMendixObject __Wallet;
-	private cardanowallet.proxies.Wallet Wallet;
+	/** @deprecated use Wallet.getMendixObject() instead. */
+	@java.lang.Deprecated(forRemoval = true)
+	private final IMendixObject __Wallet;
+	private final cardanowallet.proxies.Wallet Wallet;
 
-	public JA_GetAccountBalances(IContext context, IMendixObject Wallet)
+	public JA_GetAccountBalances(
+		IContext context,
+		IMendixObject _wallet
+	)
 	{
 		super(context);
-		this.__Wallet = Wallet;
+		this.__Wallet = _wallet;
+		this.Wallet = _wallet == null ? null : cardanowallet.proxies.Wallet.initialize(getContext(), _wallet);
 	}
 
 	@java.lang.Override
 	public java.lang.Void executeAction() throws Exception
 	{
-		this.Wallet = this.__Wallet == null ? null : cardanowallet.proxies.Wallet.initialize(getContext(), __Wallet);
-
 		// BEGIN USER CODE
 		this.blockfrostProjectId = cardanowallet.proxies.constants.Constants.getBLOCKFROST_PROJECTID();
 		String networkString = this.Wallet.getCardanonetwork().name();

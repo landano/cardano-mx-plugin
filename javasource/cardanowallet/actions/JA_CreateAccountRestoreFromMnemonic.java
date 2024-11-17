@@ -38,24 +38,30 @@ import com.mendix.systemwideinterfaces.core.IMendixObject;
 
 public class JA_CreateAccountRestoreFromMnemonic extends CustomJavaAction<IMendixObject>
 {
-	private java.lang.String Mnemonic;
-	private java.lang.String CARDANONETWORK;
-	private IMendixObject __Wallet;
-	private cardanowallet.proxies.Wallet Wallet;
+	private final java.lang.String Mnemonic;
+	private final java.lang.String CARDANONETWORK;
+	/** @deprecated use Wallet.getMendixObject() instead. */
+	@java.lang.Deprecated(forRemoval = true)
+	private final IMendixObject __Wallet;
+	private final cardanowallet.proxies.Wallet Wallet;
 
-	public JA_CreateAccountRestoreFromMnemonic(IContext context, java.lang.String Mnemonic, java.lang.String CARDANONETWORK, IMendixObject Wallet)
+	public JA_CreateAccountRestoreFromMnemonic(
+		IContext context,
+		java.lang.String _mnemonic,
+		java.lang.String _cARDANONETWORK,
+		IMendixObject _wallet
+	)
 	{
 		super(context);
-		this.Mnemonic = Mnemonic;
-		this.CARDANONETWORK = CARDANONETWORK;
-		this.__Wallet = Wallet;
+		this.Mnemonic = _mnemonic;
+		this.CARDANONETWORK = _cARDANONETWORK;
+		this.__Wallet = _wallet;
+		this.Wallet = _wallet == null ? null : cardanowallet.proxies.Wallet.initialize(getContext(), _wallet);
 	}
 
 	@java.lang.Override
 	public IMendixObject executeAction() throws Exception
 	{
-		this.Wallet = this.__Wallet == null ? null : cardanowallet.proxies.Wallet.initialize(getContext(), __Wallet);
-
 		// BEGIN USER CODE
 		//create a wallet -> create accounts and attach them to this wallet-> generate mnenomics (recovery phrase)
 		// confirm that I confirm that nobody can see my screen, because anyone who knows my recovery phrase will be able to spend the funds in my wallet.
