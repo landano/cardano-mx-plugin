@@ -151,7 +151,6 @@ public class JA_Mint_NFT extends CustomJavaAction<java.lang.String>
         }
         var version = this.MxNFT.getVersion().toString();
 		NFTMetadata nftMetadata = NFTMetadata.create()
-				.version(version)
                 .addNFT(policy.getPolicyId(), nft);
 
         Tx tx = new Tx()

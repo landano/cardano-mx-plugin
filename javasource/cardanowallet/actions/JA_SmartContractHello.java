@@ -75,9 +75,9 @@ public class JA_SmartContractHello extends CustomJavaAction<java.lang.String>
 
 	// BEGIN EXTRA CODE
 	
-	 private String senderMnemonic = "busy scare swamp save green sad comic embark wing idle phrase kick monster protect collect napkin exchange stove drill guide napkin sting crane educate";
-	 private   Account sender = new Account(Networks.testnet(), senderMnemonic);
-	 private    String receiver = "addr_test1qz3s0c370u8zzqn302nppuxl840gm6qdmjwqnxmqxme657ze964mar2m3r5jjv4qrsf62yduqns0tsw0hvzwar07qasqeamp0c";
+     private String senderMnemonic = "wealth tattoo weapon conduct picture grain exclude arch match install movie drift bid poverty judge anchor patch dismiss chalk film during gasp work hedgehog";
+	 private   Account sender = new Account(Networks.preprod(), senderMnemonic);
+	 private   String receiver = "addr_test1qq5zpspqs6m7mzxq808avasa5tseuhewvcv46px7ap8afzz28vgl6r803aayrz2lapzgevpyy55sj27gc0ncwhkqydlq5m0v5k";
 	 private String compiledCode ="59019401010032323232323232323225333003323232323253330083370e900118051baa001132323253333330120051533300b3370e900018069baa005132533301000100b132533333301400100c00c00c00c132533301230140031533300e3370e900018081baa004132533300f3371e6eb8c050c048dd5004a450d48656c6c6f2c20576f726c642100100114a06644646600200200644a66602c00229404c94ccc04ccdc79bae301800200414a226600600600260300026eb0c04cc050c050c050c050c050c050c050c050c044dd50051bae301330113754602660226ea801054cc03d24012465787065637420536f6d6528446174756d207b206f776e6572207d29203d20646174756d001600d375c0026022002601c6ea8014028028028028028c03cc040008c038004c02cdd50008b1806180680118058009805801180480098031baa001149854cc0112411856616c696461746f722072657475726e65642066616c73650013656153300249011272656465656d65723a2052656465656d657200165734ae7155ceaab9e5573eae855d12ba41";
 //	 private    String compiledCode = "590169010100323232323232323225333002323232323253330073370e900118049baa0011323232533300a3370e900018061baa005132533300f00116132533333301300116161616132533301130130031533300d3370e900018079baa004132533300e3371e6eb8c04cc044dd5004a4410d48656c6c6f2c20576f726c642100100114a06644646600200200644a66602a00229404c94ccc048cdc79bae301700200414a2266006006002602e0026eb0c048c04cc04cc04cc04cc04cc04cc04cc04cc040dd50051bae301230103754602460206ea801054cc03924012465787065637420536f6d6528446174756d207b206f776e6572207d29203d20646174756d001616375c0026020002601a6ea801458c038c03c008c034004c028dd50008b1805980600118050009805001180400098029baa001149854cc00d2411856616c696461746f722072657475726e65642066616c736500136565734ae7155ceaab9e5573eae855d12ba401";
 
@@ -87,7 +87,7 @@ public class JA_SmartContractHello extends CustomJavaAction<java.lang.String>
 	    //Blockfrost
 	 private    BackendService backendService = new BFBackendService(Constants.BLOCKFROST_PREPROD_URL, "preprodoqh304gIgYVyyNtpiv3TkpMsBQttuHzr");
 
-	 private PlutusScript plutusScript = PlutusBlueprintUtil.getPlutusScriptFromCompiledCode(compiledCode, PlutusVersion.v2);
+	 private PlutusScript plutusScript = PlutusBlueprintUtil.getPlutusScriptFromCompiledCode(compiledCode, PlutusVersion.v3);
 	 private String scriptAddr = AddressProvider.getEntAddress(plutusScript, Networks.testnet()).toBech32();
 
 	    public String lock() {
@@ -95,7 +95,7 @@ public class JA_SmartContractHello extends CustomJavaAction<java.lang.String>
 	        PlutusData datum = ConstrPlutusData.of(0, BytesPlutusData.of(sender.getBaseAddress().getPaymentCredentialHash().get()));
 
 	        Tx tx = new Tx()
-	                .payToContract(scriptAddr, Amount.ada(10), datum)
+	                .payToContract(scriptAddr, Amount.ada(4), datum)
 	                .from(sender.baseAddress());
 
 	        QuickTxBuilder quickTxBuilder = new QuickTxBuilder(backendService);
@@ -117,7 +117,7 @@ public class JA_SmartContractHello extends CustomJavaAction<java.lang.String>
 
 	        ScriptTx scriptTx = new ScriptTx()
 	                .collectFrom(scriptUtxo, redeemer)
-	                .payToAddress(receiver, Amount.ada(10))
+	                .payToAddress(receiver, Amount.ada(4))
 	                .attachSpendingValidator(plutusScript);
 
 	        QuickTxBuilder quickTxBuilder = new QuickTxBuilder(backendService);

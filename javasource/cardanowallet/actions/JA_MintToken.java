@@ -78,7 +78,6 @@ public class JA_MintToken extends CustomJavaAction<java.lang.String>
                 .description("This is a test NFT2");
 
         NFTMetadata nftMetadata = NFTMetadata.create()
-        		.version("1.0")
                 .addNFT(policy.getPolicyId(), nft);
 
         Value value = Value.builder()
