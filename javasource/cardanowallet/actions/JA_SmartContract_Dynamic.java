@@ -167,7 +167,13 @@ public class JA_SmartContract_Dynamic extends CustomJavaAction<IMendixObject>
 	 private String scriptAddr; // = AddressProvider.getEntAddress(plutusScript, Networks.testnet()).toBech32();
 	
     public String lock() {
-    	sender = new Account(selectedNetwork, (new EncryptDecryptMnemonic()).decrypt(this.SenderEncryptedMnemonic, this.SenderPassPhrase));
+    	var decrypt = new EncryptDecryptMnemonic();
+    	try {
+			sender = new Account(selectedNetwork, decrypt.decrypt(this.SenderEncryptedMnemonic, this.SenderPassPhrase));
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		plutusScript = PlutusBlueprintUtil.getPlutusScriptFromCompiledCode(compiledCode, PlutusVersion.v3);
 		scriptAddr = AddressProvider.getEntAddress(plutusScript, selectedNetwork).toBech32();
         //create datum
