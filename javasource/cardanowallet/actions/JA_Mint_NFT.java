@@ -121,6 +121,7 @@ public class JA_Mint_NFT extends CustomJavaAction<java.lang.String>
         LOG.info("Sender address"+senderAddress);
 
         Policy policy = PolicyUtil.createMultiSigScriptAllPolicy(this.MxNFT.getPolicyName(),1);
+
         Asset asset = new Asset(this.MxNFT.getAssetName(), BigInteger.valueOf(1));
         NFT nft = NFT.create()
         		.assetName(asset.getName())
