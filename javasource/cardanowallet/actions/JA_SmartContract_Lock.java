@@ -65,6 +65,7 @@ public class JA_SmartContract_Lock extends CustomJavaAction<IMendixObject>
 	@java.lang.Deprecated(forRemoval = true)
 	private final IMendixObject __SenderWallet;
 	private final cardanowallet.proxies.Wallet SenderWallet;
+	private final java.lang.String ReceiverAddress;
 
 	public JA_SmartContract_Lock(
 		IContext context,
@@ -73,7 +74,8 @@ public class JA_SmartContract_Lock extends CustomJavaAction<IMendixObject>
 		java.lang.String _senderPassPhrase,
 		IMendixObject _contractScript,
 		java.math.BigDecimal _contractAmount,
-		IMendixObject _senderWallet
+		IMendixObject _senderWallet,
+		java.lang.String _receiverAddress
 	)
 	{
 		super(context);
@@ -85,6 +87,7 @@ public class JA_SmartContract_Lock extends CustomJavaAction<IMendixObject>
 		this.ContractAmount = _contractAmount;
 		this.__SenderWallet = _senderWallet;
 		this.SenderWallet = _senderWallet == null ? null : cardanowallet.proxies.Wallet.initialize(getContext(), _senderWallet);
+		this.ReceiverAddress = _receiverAddress;
 	}
 
 	@java.lang.Override

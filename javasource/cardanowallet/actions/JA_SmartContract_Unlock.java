@@ -66,6 +66,7 @@ public class JA_SmartContract_Unlock extends CustomJavaAction<IMendixObject>
 	@java.lang.Deprecated(forRemoval = true)
 	private final IMendixObject __SenderWallet;
 	private final cardanowallet.proxies.Wallet SenderWallet;
+	private final java.lang.String SignerMnemonic;
 
 	public JA_SmartContract_Unlock(
 		IContext context,
@@ -75,7 +76,8 @@ public class JA_SmartContract_Unlock extends CustomJavaAction<IMendixObject>
 		java.lang.String _redeemerGuess,
 		IMendixObject _contractScript,
 		java.math.BigDecimal _contractAmount,
-		IMendixObject _senderWallet
+		IMendixObject _senderWallet,
+		java.lang.String _signerMnemonic
 	)
 	{
 		super(context);
@@ -88,6 +90,7 @@ public class JA_SmartContract_Unlock extends CustomJavaAction<IMendixObject>
 		this.ContractAmount = _contractAmount;
 		this.__SenderWallet = _senderWallet;
 		this.SenderWallet = _senderWallet == null ? null : cardanowallet.proxies.Wallet.initialize(getContext(), _senderWallet);
+		this.SignerMnemonic = _signerMnemonic;
 	}
 
 	@java.lang.Override
@@ -135,10 +138,19 @@ public class JA_SmartContract_Unlock extends CustomJavaAction<IMendixObject>
     public String unlock() throws ApiException {
     	var resultString = "";
     	try {
+//    		PlutusScript plutusScript = PlutusBlueprintUtil.getPlutusScriptFromCompiledCode(compiledCode, PlutusVersion.v3);
+//    	    String scrtiptAddr = AddressProvider.getEntAddress(plutusScript, Networks.preprod()).toBech32();
     	plutusScript = PlutusBlueprintUtil.getPlutusScriptFromCompiledCode(this.ContractScript.getPlutusScriptCode(), PlutusVersion.v3);
-    	scriptAddr = this.ContractScript.getScriptAddress();
-    	String senderBaseAddress = this.ContractScript.getSenderAddress();
-    	Address senderAddress = new Address(senderBaseAddress);
+    	scriptAddr = AddressProvider.getEntAddress(plutusScript, selectedNetwork).toBech32();
+//    	String senderBaseAddress = this.ContractScript.getSenderAddress();
+    	Account signer = new Account(selectedNetwork, this.SignerMnemonic);
+    	LOG.info(signer);
+    	System.out.println("===============================signer:::");
+    	System.out.println(signer);
+    	System.out.println("===============================baseAddress::");
+    	System.out.println(signer.baseAddress());
+    	System.out.println("===============================getBaseAddress:::");
+    	System.out.println(signer.getBaseAddress());
     	receiver = this.ReceiverAddress;
     	
         Utxo scriptUtxo = getAvailableUtxo(backendService.getUtxoService(), this.ContractScript.getLockTransactionHash(), scriptAddr).orElseThrow();
@@ -153,13 +165,12 @@ public class JA_SmartContract_Unlock extends CustomJavaAction<IMendixObject>
 
         QuickTxBuilder quickTxBuilder = new QuickTxBuilder(backendService);
         Result<String> result;
-		LOG.info("Createing result object\n==========");
+		LOG.info("Creating result object\n==========");
 			result = quickTxBuilder.compose(scriptTx)
 			        .feePayer(receiver)
-			        .collateralPayer(senderBaseAddress)
-			        .withSigner(SignerProviders.signerFrom(SecretKey.create(
-			        		Base64.getDecoder().decode(this.SenderWallet.getSKey()))))
-			        .withRequiredSigners(senderAddress)
+			        .collateralPayer(signer.baseAddress())
+			        .withSigner(SignerProviders.signerFrom(signer))
+			        .withRequiredSigners(signer.getBaseAddress())
 			        .completeAndWait(System.out::println);
 			
 			/*var ddd = new EncryptDecryptMnemonic();
@@ -171,13 +182,9 @@ public class JA_SmartContract_Unlock extends CustomJavaAction<IMendixObject>
 		        .withRequiredSigners(senderAddress)
 		        .completeAndWait(System.out::println);*/
 	        
-			System.out.println(result);
+			System.out.println(result);  
 			LOG.info(result);
 	        return result.toString();
-			
-		} catch (CborSerializationException e) {
-			// TODO Auto-generated catch block
-			LOG.error(e);
 //			return e.toString();
 		} catch (Exception e) {
 			// TODO Auto-generated catch block4
