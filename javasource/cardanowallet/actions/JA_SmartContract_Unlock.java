@@ -138,63 +138,49 @@ public class JA_SmartContract_Unlock extends CustomJavaAction<IMendixObject>
     public String unlock() throws ApiException {
     	var resultString = "";
     	try {
-//    		PlutusScript plutusScript = PlutusBlueprintUtil.getPlutusScriptFromCompiledCode(compiledCode, PlutusVersion.v3);
-//    	    String scrtiptAddr = AddressProvider.getEntAddress(plutusScript, Networks.preprod()).toBech32();
-    	plutusScript = PlutusBlueprintUtil.getPlutusScriptFromCompiledCode(this.ContractScript.getPlutusScriptCode(), PlutusVersion.v3);
-    	scriptAddr = AddressProvider.getEntAddress(plutusScript, selectedNetwork).toBech32();
-//    	String senderBaseAddress = this.ContractScript.getSenderAddress();
-    	Account signer = new Account(selectedNetwork, this.SignerMnemonic);
-    	LOG.info(signer);
-    	System.out.println("===============================signer:::");
-    	System.out.println(signer);
-    	System.out.println("===============================baseAddress::");
-    	System.out.println(signer.baseAddress());
-    	System.out.println("===============================getBaseAddress:::");
-    	System.out.println(signer.getBaseAddress());
-    	receiver = this.ReceiverAddress;
-    	
-        Utxo scriptUtxo = getAvailableUtxo(backendService.getUtxoService(), this.ContractScript.getLockTransactionHash(), scriptAddr).orElseThrow();
+	    	plutusScript = PlutusBlueprintUtil.getPlutusScriptFromCompiledCode(this.ContractScript.getPlutusScriptCode(), PlutusVersion.v3);
+	    	LOG.info("plutus:::" + plutusScript);
+	    	scriptAddr = AddressProvider.getEntAddress(plutusScript, selectedNetwork).toBech32();
+	    	LOG.info("scriptAddr:::" + scriptAddr);
+	    	LOG.info("Script Address from ContractStript:::"+this.ContractScript.getScriptAddress());
+	    	//the signer mnemonic is for the receiver, so we'll ignore 'this.ReceiverAddress'
+	    	Account signer = new Account(selectedNetwork, this.SignerMnemonic);
+	    	receiver = signer.baseAddress();
+	    	
+	        Utxo scriptUtxo = null;
+	        Optional<Utxo> UtxoO = checkIfUtxoAvailable2(this.ContractScript.getLockTransactionHash(), scriptAddr); //.orElseThrow();
+	        if(UtxoO.isPresent()) {
+	            scriptUtxo = UtxoO.get();
+	            System.out.println("Utxo is present:::" + scriptUtxo.toString());
+	        } else {
+	            System.out.println("Utxo is not present::::NULL"); //checkIfUtxoAvailable2(contractTxHash, scrtiptAddr).isPresent(); //ScriptUtxoFinders.findFirstByInlineDatum(utxoSupplier, scrtiptAddr, datum).orElseThrow();
+	        }
+	        PlutusData redeemer = ConstrPlutusData.of(0, BytesPlutusData.of(this.RedeemerGuess));
+	        ScriptTx scriptTx = new ScriptTx()
+	                .collectFrom(scriptUtxo, redeemer)
+	                .payToAddress(signer.baseAddress(), Amount.ada(this.ContractAmount.doubleValue()))
+	                .attachSpendingValidator(plutusScript);
+	
+	
+	        QuickTxBuilder quickTxBuilder = new QuickTxBuilder(backendService);
+	        Result<String> result = quickTxBuilder.compose(scriptTx)
+	                .feePayer(signer.baseAddress())
+	                .withSigner(SignerProviders.signerFrom(signer))
+	                .withRequiredSigners(signer.getBaseAddress())
+	                .completeAndWait(System.out::println);
 
-        PlutusData redeemer = ConstrPlutusData.of(0, BytesPlutusData.of(this.RedeemerGuess));
-
-        ScriptTx scriptTx = new ScriptTx()
-                .collectFrom(scriptUtxo, redeemer)
-                .payToAddress(receiver, Amount.ada(this.ContractAmount.doubleValue()))
-                .attachSpendingValidator(plutusScript);
-        
-
-        QuickTxBuilder quickTxBuilder = new QuickTxBuilder(backendService);
-        Result<String> result;
-		LOG.info("Creating result object\n==========");
-			result = quickTxBuilder.compose(scriptTx)
-			        .feePayer(receiver)
-			        .collateralPayer(signer.baseAddress())
-			        .withSigner(SignerProviders.signerFrom(signer))
-			        .withRequiredSigners(signer.getBaseAddress())
-			        .completeAndWait(System.out::println);
-			
-			/*var ddd = new EncryptDecryptMnemonic();
-			var sender = new Account(selectedNetwork, ddd.decrypt(this.SenderWallet.getMnemonicEncrypted(), this.SenderPassPhrase));
-			result = quickTxBuilder.compose(scriptTx)
-		        .feePayer(receiver)
-		        .collateralPayer(senderBaseAddress)
-		        .withSigner(SignerProviders.signerFrom(sender))
-		        .withRequiredSigners(senderAddress)
-		        .completeAndWait(System.out::println);*/
 	        
 			System.out.println(result);  
+			LOG.info("=====RESULT======");
 			LOG.info(result);
-	        return result.toString();
-//			return e.toString();
+			LOG.info("=====SMART CONTRACT REDEMPTION DONE======");
+			resultString = result.toString();
 		} catch (Exception e) {
-			// TODO Auto-generated catch block4
 			 e.printStackTrace();
 			 System.out.println(e);
 			 LOG.error(e);
 		}
     	return resultString;
-//		return PlutusScriptCode;
-
     }
  	
     
@@ -213,6 +199,8 @@ public class JA_SmartContract_Unlock extends CustomJavaAction<IMendixObject>
 			selectedNetwork = Networks.mainnet();
 			blockfrostUrl = Constants.BLOCKFROST_MAINNET_URL;
 		}
+		selectedNetwork = Networks.preprod();
+		blockfrostUrl = Constants.BLOCKFROST_PREPROD_URL;
 	}
     
 	public void waitForTransaction(Result<String> result) {
@@ -236,19 +224,20 @@ public class JA_SmartContract_Unlock extends CustomJavaAction<IMendixObject>
 		}
 	}
 	
-	private Optional<Utxo> getAvailableUtxo (UtxoService utxoService, String txHash, String address) {
+	private Optional<Utxo> getAvailableUtxo(String txHash, String address) {
 		Optional<Utxo> utxo = Optional.empty();
         int count = 0;
         while (utxo.isEmpty()) {
             if (count++ >= 20)
                 break;
-            List<Utxo> utxos = new DefaultUtxoSupplier(utxoService).getAll(address);
+            List<Utxo> utxos = new DefaultUtxoSupplier(backendService.getUtxoService()).getAll(address);
             utxo = utxos.stream().filter(u -> u.getTxHash().equals(txHash))
                     .findFirst();
             if(utxo.isPresent()) {
                 System.out.println("Output got is::::"+String.valueOf(count) +" :::::::: " + utxo.get().toString());
+            } else {
+            	System.out.println("Try to get new output... txhash: " + txHash);
             }
-            System.out.println("Try to get new output... txhash: " + txHash);
 
             try {
                 Thread.sleep(1000);
@@ -257,6 +246,22 @@ public class JA_SmartContract_Unlock extends CustomJavaAction<IMendixObject>
         return utxo;
     }
 	
+	protected Optional<Utxo> checkIfUtxoAvailable2(String txHash, String address) {
+        Optional<Utxo> utxo = Optional.empty();
+        int count = 0;
+        while (utxo.isEmpty()) {
+            if (count++ >= 20)
+                break;
+            List<Utxo> utxos = new DefaultUtxoSupplier(backendService.getUtxoService()).getAll(address);
+            utxo = utxos.stream().filter(u -> u.getTxHash().equals(txHash))
+                    .findFirst();
+            System.out.println("Try to get new output... txhash: " + txHash);
+            try {
+                Thread.sleep(1000);
+            } catch (Exception e) {}
+        }
+        return utxo;
+    }
 	
 	// END EXTRA CODE
 }
