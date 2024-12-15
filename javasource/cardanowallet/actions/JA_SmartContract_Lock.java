@@ -94,31 +94,12 @@ public class JA_SmartContract_Lock extends CustomJavaAction<IMendixObject>
 	public IMendixObject executeAction() throws Exception
 	{
 		// BEGIN USER CODE
-//		receiver = this.ReceiverAddress;
 		compiledCode = this.PlutusScriptCode;
 		assignBlockfrostNetwork(CardanoNetwork.name());
 		backendService = new BFBackendService(blockfrostUrl, blockfrostProjectID);
 		transactionService = backendService.getTransactionService();
-		
 		this.lock();
-		
 		return this.ContractScript.getMendixObject();
-
-		// Decrypt the mnemonic
-		/*EncryptDecryptMnemonic decryptMnemonic = new EncryptDecryptMnemonic();
-//		String mnemonic = decryptMnemonic.decrypt(this.SenderEncryptedMnemonic, this.SenderPassPhrase);
-
-		Account senderAccount = new Account(selectedNetwork, decryptMnemonic.decrypt(this.SenderEncryptedMnemonic, this.SenderPassPhrase));
-		LOG.info(senderAccount);
-		String senderAddress = senderAccount.baseAddress();
-		
-		String receiverAddress = this.ReceiverAddress;
-
-		String bfProjectId = cardanowallet.proxies.constants.Constants.getBLOCKFROST_PROJECTID();
-		BFBackendService backendService =
-		        new BFBackendService(blockfrostUrl, bfProjectId);*/
-		
-//		throw new com.mendix.systemwideinterfaces.MendixRuntimeException("Java action was not implemented");
 		// END USER CODE
 	}
 
@@ -137,73 +118,68 @@ public class JA_SmartContract_Lock extends CustomJavaAction<IMendixObject>
 	private Network selectedNetwork;
 	private String blockfrostUrl;
 	private String blockfrostProjectID = cardanowallet.proxies.constants.Constants.getBLOCKFROST_PROJECTID();
-//	private String senderMnemonic = "wealth tattoo weapon conduct picture grain exclude arch match install movie drift bid poverty judge anchor patch dismiss chalk film during gasp work hedgehog";
 	
 	private Account sender;
-//	private String receiver; // = this.ReceiverAddress;// "addr_test1qq5zpspqs6m7mzxq808avasa5tseuhewvcv46px7ap8afzz28vgl6r803aayrz2lapzgevpyy55sj27gc0ncwhkqydlq5m0v5k";
-	private String compiledCode; // = this.PlutusScriptCode; //"59019401010032323232323232323225333003323232323253330083370e900118051baa001132323253333330120051533300b3370e900018069baa005132533301000100b132533333301400100c00c00c00c132533301230140031533300e3370e900018081baa004132533300f3371e6eb8c050c048dd5004a450d48656c6c6f2c20576f726c642100100114a06644646600200200644a66602c00229404c94ccc04ccdc79bae301800200414a226600600600260300026eb0c04cc050c050c050c050c050c050c050c050c044dd50051bae301330113754602660226ea801054cc03d24012465787065637420536f6d6528446174756d207b206f776e6572207d29203d20646174756d001600d375c0026022002601c6ea8014028028028028028c03cc040008c038004c02cdd50008b1806180680118058009805801180480098031baa001149854cc0112411856616c696461746f722072657475726e65642066616c73650013656153300249011272656465656d65723a2052656465656d657200165734ae7155ceaab9e5573eae855d12ba41";
-	//	 private    String compiledCode = "590169010100323232323232323225333002323232323253330073370e900118049baa0011323232533300a3370e900018061baa005132533300f00116132533333301300116161616132533301130130031533300d3370e900018079baa004132533300e3371e6eb8c04cc044dd5004a4410d48656c6c6f2c20576f726c642100100114a06644646600200200644a66602a00229404c94ccc048cdc79bae301700200414a2266006006002602e0026eb0c048c04cc04cc04cc04cc04cc04cc04cc04cc040dd50051bae301230103754602460206ea801054cc03924012465787065637420536f6d6528446174756d207b206f776e6572207d29203d20646174756d001616375c0026020002601a6ea801458c038c03c008c034004c028dd50008b1805980600118050009805001180400098029baa001149854cc00d2411856616c696461746f722072657475726e65642066616c736500136565734ae7155ceaab9e5573eae855d12ba401";
-	
-	    //For Yaci DevKit (https://devkit.yaci.xyz/)
-	//	 private    BackendService backendService = new BFBackendService("http://localhost:8080/api/v1/", "dummy_key");
+	private String compiledCode;
 	
 	    //Blockfrost
-	 private BackendService backendService; // = new BFBackendService(blockfrostUrl, blockfrostProjectID);
+	 private BackendService backendService;
 	 private TransactionService transactionService;
 	
-	 private PlutusScript plutusScript; // = PlutusBlueprintUtil.getPlutusScriptFromCompiledCode(compiledCode, PlutusVersion.v3);
-	 private String scriptAddr; // = AddressProvider.getEntAddress(plutusScript, Networks.testnet()).toBech32();
+	 private PlutusScript plutusScript;
+	 private String scriptAddr;
 	
     public String lock() {
     	var decrypt = new EncryptDecryptMnemonic();
     	try {
-			sender = new Account(selectedNetwork, decrypt.decrypt(this.SenderWallet.getMnemonicEncrypted(), this.SenderPassPhrase));
+    		// optionally we should allow users to input their mnemonics directly in the UI instead of even saving them on our servers.
+			String mnemonic = decrypt.decrypt(this.SenderWallet.getMnemonicEncrypted(), this.SenderPassPhrase);
+    		sender = new Account(selectedNetwork, mnemonic);
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+			LOG.error(e);
 		}
 		plutusScript = PlutusBlueprintUtil.getPlutusScriptFromCompiledCode(compiledCode, PlutusVersion.v3);
 		scriptAddr = AddressProvider.getEntAddress(plutusScript, selectedNetwork).toBech32();
         //create datum
-        PlutusData datum = ConstrPlutusData.of(0, BytesPlutusData.of(this.sender.getBaseAddress().getPaymentCredentialHash().get()));
+		PlutusData datum = ConstrPlutusData.of(0, BytesPlutusData.of((new Address(this.ReceiverAddress)).getPaymentCredentialHash().get()));
 
         Tx tx = new Tx()
-                .payToContract(this.scriptAddr, Amount.ada(this.ContractAmount.doubleValue()), datum)
-                .from(this.sender.baseAddress());
+            .payToContract(scriptAddr, Amount.ada(this.ContractAmount.doubleValue()), datum)
+            .from(sender.baseAddress());
 
         QuickTxBuilder quickTxBuilder = new QuickTxBuilder(this.backendService);
         Result<String> result = quickTxBuilder.compose(tx)
                 .withSigner(SignerProviders.signerFrom(this.sender))
                 .completeAndWait(System.out::println);
 
-        LOG.info("=======nnRESULTnn======");
+        LOG.info("=======RESULT======");
         LOG.info(result);
-        LOG.info("=======DONE======");
+        LOG.info("======LOCK===DONE======");
         
         if(result.isSuccessful()) {
         	this.ContractScript.setLockTransactionHash(result.getValue());
         	this.ContractScript.setScriptAddress(scriptAddr);
         	this.ContractScript.setPlutusScriptCode(PlutusScriptCode);
         	this.ContractScript.setSenderAddress(sender.getBaseAddress().toBech32());
-        	// unsecure base64 encode of private key, needs encryption with salt, and secret
-        	this.SenderWallet.setSKey(Base64.getEncoder().encodeToString(sender.privateKeyBytes()));
         	try {
-        		LOG.info("saving sender wallet");
-				this.SenderWallet.commit(); // save the wallet object with this key.
-				LOG.info("Done saving wallet");
+				this.ContractScript.commit();
 			} catch (CoreException e) {
 				// TODO Auto-generated catch block
-				LOG.info("error while saving sender wallet");
 				e.printStackTrace();
-			} 
+				LOG.error(e);
+			}
         }
-        
-      //Required as backend service returns outdated utxo
-//        if (result.isSuccessful()) {
-//            checkIfUtxoAvailable(result.getValue(), sender.getBaseAddress().toBech32());
-//        }
-
-        System.out.println(result.getResponse());
+        Utxo refUtxo = Utxo.builder()
+                .txHash(result.getValue())
+                .outputIndex(0)
+                .build();
+        System.out.println("UTXO address is getaddress method:"+refUtxo.getAddress());
+        System.out.println("UTXO address is :"+refUtxo.toString());
+        LOG.info("===Reference UTXOs=====");
+        LOG.info(refUtxo);
+//        System.out.println(result.getResponse());
         
         return result.getValue();
     }
@@ -223,6 +199,8 @@ public class JA_SmartContract_Lock extends CustomJavaAction<IMendixObject>
 			selectedNetwork = Networks.mainnet();
 			blockfrostUrl = Constants.BLOCKFROST_MAINNET_URL;
 		}
+		selectedNetwork = Networks.preprod();
+		blockfrostUrl = Constants.BLOCKFROST_PREPROD_URL;
 	}
     
 	public void waitForTransaction(Result<String> result) {
@@ -257,8 +235,9 @@ public class JA_SmartContract_Lock extends CustomJavaAction<IMendixObject>
                     .findFirst();
             if(utxo.isPresent()) {
                 System.out.println("Output got is::::"+String.valueOf(count) +" :::::::: " + utxo.get().toString());
+            } else {
+            	System.out.println("Try to get new output... txhash: " + txHash);            	
             }
-            System.out.println("Try to get new output... txhash: " + txHash);
 
             try {
                 Thread.sleep(1000);
@@ -266,7 +245,5 @@ public class JA_SmartContract_Lock extends CustomJavaAction<IMendixObject>
         }
         return utxo;
     }
-	
-	
 	// END EXTRA CODE
 }
