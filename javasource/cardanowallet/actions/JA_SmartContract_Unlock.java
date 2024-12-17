@@ -173,6 +173,9 @@ public class JA_SmartContract_Unlock extends CustomJavaAction<IMendixObject>
 			System.out.println(result);  
 			LOG.info("=====RESULT======");
 			LOG.info(result);
+			if(result.isSuccessful()) {
+				this.ContractScript.setUnLockTransactionHash(result.toString());
+			}
 			LOG.info("=====SMART CONTRACT REDEMPTION DONE======");
 			resultString = result.toString();
 		} catch (Exception e) {
