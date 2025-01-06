@@ -17,6 +17,7 @@ import com.bloxbean.cardano.client.transaction.spec.Policy;
 import com.bloxbean.cardano.client.transaction.spec.script.ScriptAtLeast;
 import com.bloxbean.cardano.client.transaction.spec.script.ScriptPubkey;
 import com.bloxbean.cardano.client.util.HexUtil;
+import com.bloxbean.cardano.client.util.JsonUtil;
 import com.mendix.systemwideinterfaces.core.IContext;
 import com.mendix.webui.CustomJavaAction;
 import com.mendix.systemwideinterfaces.core.IMendixObject;
@@ -53,10 +54,10 @@ public class JA_CreatePolicy extends CustomJavaAction<IMendixObject>
 	public IMendixObject executeAction() throws Exception
 	{
 		// BEGIN USER CODE
-		Policy policy_ = PolicyUtil.createMultiSigScriptAllPolicy(this.Policy.getName(),1);
-	    String policyKey = HexUtil.encodeHexString(policy_.getPolicyKeys().get(0).getBytes());
-	    this.Policy.setPKey(policyKey);
-	    this.Policy.setPolicyId(policy_.getPolicyId());
+		Policy policy = PolicyUtil.createMultiSigScriptAllPolicy(this.Policy.getName(),1);
+	    String policySerialized = JsonUtil.getPrettyJson(policy);
+	    this.Policy.setPKey(policySerialized);
+	    this.Policy.setPolicyId(policy.getPolicyId());
 	    return this.Policy.getMendixObject();
 	    
 		/* ScriptAtLeast scriptAtLeast = new ScriptAtLeast(this.Policy.getAllowedWitnesses());

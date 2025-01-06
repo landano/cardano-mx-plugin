@@ -78,6 +78,10 @@ public class JA_Mint_NFT extends CustomJavaAction<java.lang.String>
 	@java.lang.Deprecated(forRemoval = true)
 	private final java.util.List<IMendixObject> __NFTFileList;
 	private final java.util.List<cardanowallet.proxies.NFTFile> NFTFileList;
+	/** @deprecated use Policy.getMendixObject() instead. */
+	@java.lang.Deprecated(forRemoval = true)
+	private final IMendixObject __Policy;
+	private final cardanowallet.proxies.Policy Policy;
 
 	public JA_Mint_NFT(
 		IContext context,
@@ -88,7 +92,8 @@ public class JA_Mint_NFT extends CustomJavaAction<java.lang.String>
 		java.lang.String _metadata,
 		IMendixObject _mxNFT,
 		java.lang.String _iPFSImage,
-		java.util.List<IMendixObject> _nFTFileList
+		java.util.List<IMendixObject> _nFTFileList,
+		IMendixObject _policy
 	)
 	{
 		super(context);
@@ -106,6 +111,8 @@ public class JA_Mint_NFT extends CustomJavaAction<java.lang.String>
 			.stream()
 			.map(nFTFileListElement -> cardanowallet.proxies.NFTFile.initialize(getContext(), nFTFileListElement))
 			.collect(java.util.stream.Collectors.toList());
+		this.__Policy = _policy;
+		this.Policy = _policy == null ? null : cardanowallet.proxies.Policy.initialize(getContext(), _policy);
 	}
 
 	@java.lang.Override
@@ -120,7 +127,21 @@ public class JA_Mint_NFT extends CustomJavaAction<java.lang.String>
         String senderAddress = sender.baseAddress();
         LOG.info("Sender address"+senderAddress);
 
-        Policy policy = PolicyUtil.createMultiSigScriptAllPolicy(this.MxNFT.getPolicyName(),1);
+        Policy policy = null;
+        if(this.Policy != null) {
+        	LOG.info("Using existing mx policy");
+	        try {
+	        	ObjectMapper objectMapper = new ObjectMapper();
+	        	String jsonString = this.Policy.getPKey();
+	            policy = objectMapper.readValue(jsonString, Policy.class);
+	        } catch (Exception e) {
+	        	System.out.println("Json object mapper read value error");
+	        	e.printStackTrace();
+	        }
+        } else {
+        	LOG.info("Creating a fresh Policy for the NFT");
+        	policy = PolicyUtil.createMultiSigScriptAllPolicy(this.MxNFT.getPolicyName(),1);	
+        }
 
         Asset asset = new Asset(this.MxNFT.getAssetName(), BigInteger.valueOf(1));
         NFT nft = NFT.create()
@@ -130,7 +151,7 @@ public class JA_Mint_NFT extends CustomJavaAction<java.lang.String>
         		.description(this.MxNFT.getDescription());
         
         String stringMetadata = this.MxNFT.getJSONMetadata();
-        if(!stringMetadata.startsWith("{")) {
+        if((stringMetadata != null && !stringMetadata.isEmpty()) && !stringMetadata.startsWith("{")) {
         	stringMetadata = "{"+stringMetadata+"}";
         }
 		try {
