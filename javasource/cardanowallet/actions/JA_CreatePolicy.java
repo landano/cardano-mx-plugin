@@ -17,11 +17,13 @@ import com.bloxbean.cardano.client.transaction.spec.Policy;
 import com.bloxbean.cardano.client.transaction.spec.script.ScriptAtLeast;
 import com.bloxbean.cardano.client.transaction.spec.script.ScriptPubkey;
 import com.bloxbean.cardano.client.util.HexUtil;
+import com.bloxbean.cardano.client.util.JsonUtil;
 import com.mendix.systemwideinterfaces.core.IContext;
 import com.mendix.webui.CustomJavaAction;
+import cardanowallet.EncryptDecryptMnemonic;
 import com.mendix.systemwideinterfaces.core.IMendixObject;
 
-public class JA_CreatePolicy extends CustomJavaAction<IMendixObject>
+public class JA_CreatePolicy extends CustomJavaAction<java.lang.String>
 {
 	/** @deprecated use com.mendix.utils.ListUtils.map(WitnessList, com.mendix.systemwideinterfaces.core.IEntityProxy::getMendixObject) instead. */
 	@java.lang.Deprecated(forRemoval = true)
@@ -31,11 +33,13 @@ public class JA_CreatePolicy extends CustomJavaAction<IMendixObject>
 	@java.lang.Deprecated(forRemoval = true)
 	private final IMendixObject __Policy;
 	private final cardanowallet.proxies.Policy Policy;
+	private final java.lang.String PolicyPassphrase;
 
 	public JA_CreatePolicy(
 		IContext context,
 		java.util.List<IMendixObject> _witnessList,
-		IMendixObject _policy
+		IMendixObject _policy,
+		java.lang.String _policyPassphrase
 	)
 	{
 		super(context);
@@ -47,17 +51,20 @@ public class JA_CreatePolicy extends CustomJavaAction<IMendixObject>
 			.collect(java.util.stream.Collectors.toList());
 		this.__Policy = _policy;
 		this.Policy = _policy == null ? null : cardanowallet.proxies.Policy.initialize(getContext(), _policy);
+		this.PolicyPassphrase = _policyPassphrase;
 	}
 
 	@java.lang.Override
-	public IMendixObject executeAction() throws Exception
+	public java.lang.String executeAction() throws Exception
 	{
 		// BEGIN USER CODE
-		Policy policy_ = PolicyUtil.createMultiSigScriptAllPolicy(this.Policy.getName(),1);
-	    String policyKey = HexUtil.encodeHexString(policy_.getPolicyKeys().get(0).getBytes());
-	    this.Policy.setPKey(policyKey);
-	    this.Policy.setPolicyId(policy_.getPolicyId());
-	    return this.Policy.getMendixObject();
+		Policy policy = PolicyUtil.createMultiSigScriptAllPolicy(this.Policy.getName(),1);
+	    this.Policy.setPolicyId(policy.getPolicyId());
+	    this.Policy.setScriptHash(JsonUtil.getPrettyJson(policy.getPolicyScript()));
+	    String cborHex = policy.getPolicyKeys().get(0).getCborHex();
+	    EncryptDecryptMnemonic encryptDecryptMnemonic = new EncryptDecryptMnemonic();
+	    this.Policy.setPrivateKey(encryptDecryptMnemonic.encrypt(cborHex, this.PolicyPassphrase));
+	    return cborHex;
 	    
 		/* ScriptAtLeast scriptAtLeast = new ScriptAtLeast(this.Policy.getAllowedWitnesses());
 
