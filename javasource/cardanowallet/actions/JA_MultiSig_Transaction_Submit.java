@@ -9,9 +9,13 @@
 
 package cardanowallet.actions;
 
+import java.util.ArrayList;
+import java.util.List;
 import com.bloxbean.cardano.client.api.model.Result;
 import com.bloxbean.cardano.client.exception.CborDeserializationException;
 import com.bloxbean.cardano.client.transaction.spec.Transaction;
+import com.bloxbean.cardano.client.transaction.spec.TransactionWitnessSet;
+import com.bloxbean.cardano.client.transaction.spec.VkeyWitness;
 import com.bloxbean.cardano.client.util.HexUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -71,7 +75,7 @@ public class JA_MultiSig_Transaction_Submit extends CustomJavaAction<java.lang.S
 				LOG.info(witnessSignedTxn.getWitnessSet().getVkeyWitnesses());
 				LOG.info("=======witnessSignedTx===VKeywitnessSet===get(0)=====");
 				LOG.info(witnessSignedTxn.getWitnessSet().getVkeyWitnesses().get(0));
-				transaction.getWitnessSet().getVkeyWitnesses().add(witnessSignedTxn.getWitnessSet().getVkeyWitnesses().get(0));
+				addWitness(transaction,witnessSignedTxn);
 			} catch (CborDeserializationException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -80,11 +84,13 @@ public class JA_MultiSig_Transaction_Submit extends CustomJavaAction<java.lang.S
 		});
 		
         Result<String> result = utils.backendService.getTransactionService().submitTransaction(transaction.serialize());
-
+        LOG.info("MultiSig Transaction submitted");
+        LOG.info(result);
         System.out.println(result);
         if(result.isSuccessful()) {
         	this.Txn.setCborFinal(transaction.serializeToHex());
         	this.Txn.setTransactionId(result.getValue());
+        	LOG.info("MultiSig Transaction submitted successfully "+ result.getValue());
         	utils.waitForTransactionHash(result); // we'll need a queuing system.
         } else {
         	LOG.error("Transaction failed");
@@ -107,6 +113,28 @@ public class JA_MultiSig_Transaction_Submit extends CustomJavaAction<java.lang.S
 
 	// BEGIN EXTRA CODE
 	public static ILogNode LOG = Core.getLogger("LandanoTest");
+	
+	/**
+	 * Ensures the transaction has a witness set and appends a signing witness from another transaction.
+	 *
+	 * If the transaction does not have a witness set, it initializes and sets one.
+	 *
+	 * @param transaction The transaction to be assembled.
+	 * @param witnessSignedTxn The transaction from which to pick the signing witness.
+	 */
+    public void addWitness(Transaction transaction, Transaction witnessSignedTxn) {
+        TransactionWitnessSet witnessSet = transaction.getWitnessSet();
+        List<VkeyWitness> vkeyWitnesses = witnessSet.getVkeyWitnesses();
+
+        // Check if vkeyWitnesses is null and initialize if necessary
+        if (vkeyWitnesses == null) {
+            vkeyWitnesses = new ArrayList<>();
+            witnessSet.setVkeyWitnesses(vkeyWitnesses);
+        }
+
+        // Add the witness
+        vkeyWitnesses.add(witnessSignedTxn.getWitnessSet().getVkeyWitnesses().get(0));
+    }
 
 	// END EXTRA CODE
 }
