@@ -65,6 +65,9 @@ public class JA_GetAccountBalances extends CustomJavaAction<java.lang.Void>
 		// use the account service to get the account information
 		AccountService accountService = backendService.getAccountService();
 		Result<AccountInformation> accountBalanceResult = accountService.getAccountInformation(this.Wallet.getStakeAddress());
+		LOG.info("====");
+		LOG.info(this.Wallet.getStakeAddress());
+		LOG.info("====");
 		Result<List<AccountHistory>> accountHistoryResult = accountService.getAccountHistory(this.Wallet.getStakeAddress(), 10, 1, OrderEnum.desc);
 		LOG.info(accountBalanceResult);
 		LOG.info(accountHistoryResult);
