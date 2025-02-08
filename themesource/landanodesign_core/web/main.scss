@@ -32,17 +32,7 @@
 // #############################################
 // ##  Sidebar                                ##
 // #############################################
-.mx-navigationtree {
-    ul {
-        li {
-            a {
-                span {
-                    margin-right: 20px;
-                }
-            }
-        }
-    }
-}
+
 
 .sidebar-footer {
     display: flex;
@@ -161,6 +151,25 @@
         }
 
     }
+
+    .map-detail-view {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 30%;
+        height: 100%;
+        z-index: 1000;
+        // background-color: rgba($gray-lighter, 0.8);
+        background-color: #FFFFFF99;
+        width: 413px;
+        padding: 30px 20px;
+        box-shadow: 0px 0px 10px 0px #0000001A;
+        backdrop-filter: blur(50px);
+
+        .btn-close-circle {
+
+        }
+    }
 }
 
 // #############################################
@@ -226,3 +235,9 @@
     border-radius: 10px;
 }
 
+// #############################################
+// ##  Mendix Fixes                           ##
+// #############################################
+.mx-dataview {
+    height: auto;
+}

@@ -1,3 +1,4 @@
+@import "../../atlas_core/web/_variables.scss";
 @import "custom-variables.scss";
 
 .landano-phone {
@@ -17,6 +18,57 @@
         margin: 20px;
         background-color: #FFFFFF99;
         box-shadow: 0px 0px 5px 0px #0000001A;
+
+
+    }
+
+    .wizard-step {
+        margin-top: 10px;
+        margin-bottom: 10px;
+
+        .wizard-step-number {
+            width: Fill (25px)px;
+            height: Fixed (25px)px;
+            min-width: 25px;
+            max-width: 25px;
+            min-height: 25px;
+            max-height: 25px;
+            padding: 3px 8px 3px 8px;
+            gap: 10px;
+            border-radius: 50%;
+            border: 1px 0px 0px 0px;
+            opacity: 0px;
+            color: $font-color-default; 
+            font-size: 14px;
+            font-weight: 700;
+            margin-right: 10px;
+        }
+
+        .wizard-step-text {
+            white-space: normal;
+        }
+    }
+
+    .icon-circle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 35px;
+        height: 35px;
+        gap: 10px;
+        border-radius: 50%;
+        opacity: 0px;
+        background: #D9F0FFCC;
+        color: $font-color-default;
+        font-size: 22px;
+        vertical-align: middle;
+
+        span {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
     }
 
     .landano-header {
@@ -64,7 +116,7 @@
                     .mx-icon-lined,
                     .mx-icon-filled {
                         top: -1px;
-                        margin-right: 0.5em;
+                        margin-right: 0em;
                         vertical-align: middle;
                         font-size: $navigation-glyph-size;
                     }
@@ -84,6 +136,28 @@
                     color: $navigation-color-active;
                     background-color: $navigation-bg-active;
                 }
+            }
+        }
+    }
+
+    .card {
+        .widget-maps {
+            // !important is needed here because the widget has width & height defined as a user setting
+            width: calc(100% + 48px) !important;
+            height: 200px !important;
+            margin-top: -24px;
+            margin-right: -24px;
+            margin-left: -24px;
+        }
+    }
+
+    .tab-spaced-evenly {
+        ul {
+            justify-content: space-between !important;
+
+            li {
+                flex: 1;
+                text-align: center;
             }
         }
     }
