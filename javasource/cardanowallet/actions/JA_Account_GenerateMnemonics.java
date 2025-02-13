@@ -37,7 +37,7 @@ import com.mendix.webui.CustomJavaAction;
 import cardanowallet.proxies.Mnemonic_word;
 import com.mendix.systemwideinterfaces.core.IMendixObject;
 
-public class JA_CreateAccountGenerateMnemonics_ extends CustomJavaAction<IMendixObject>
+public class JA_Account_GenerateMnemonics extends CustomJavaAction<IMendixObject>
 {
 	/** @deprecated use Wallet.getMendixObject() instead. */
 	@java.lang.Deprecated(forRemoval = true)
@@ -45,7 +45,7 @@ public class JA_CreateAccountGenerateMnemonics_ extends CustomJavaAction<IMendix
 	private final cardanowallet.proxies.WalletAPI Wallet;
 	private final java.lang.String CARDANONETWORK;
 
-	public JA_CreateAccountGenerateMnemonics_(
+	public JA_Account_GenerateMnemonics(
 		IContext context,
 		IMendixObject _wallet,
 		java.lang.String _cARDANONETWORK
@@ -133,7 +133,7 @@ public class JA_CreateAccountGenerateMnemonics_ extends CustomJavaAction<IMendix
 	@java.lang.Override
 	public java.lang.String toString()
 	{
-		return "JA_CreateAccountGenerateMnemonics_";
+		return "JA_Account_GenerateMnemonics";
 	}
 
 	// BEGIN EXTRA CODE

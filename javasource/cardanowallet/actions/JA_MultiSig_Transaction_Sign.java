@@ -26,7 +26,7 @@ import cardanowallet.Utils;
 import cardanowallet.TransactionOutputDeserializer;
 import com.mendix.systemwideinterfaces.core.IMendixObject;
 
-public class JA_MultiSig_Txn_Witness_Signing extends CustomJavaAction<java.lang.Boolean>
+public class JA_MultiSig_Transaction_Sign extends CustomJavaAction<java.lang.Boolean>
 {
 	/** @deprecated use Txn.getMendixObject() instead. */
 	@java.lang.Deprecated(forRemoval = true)
@@ -43,7 +43,7 @@ public class JA_MultiSig_Txn_Witness_Signing extends CustomJavaAction<java.lang.
 	private final java.lang.String WalletPassword;
 	private final java.lang.String EncryptedMnemonic;
 
-	public JA_MultiSig_Txn_Witness_Signing(
+	public JA_MultiSig_Transaction_Sign(
 		IContext context,
 		IMendixObject _txn,
 		IMendixObject _txnSigning,
@@ -69,15 +69,8 @@ public class JA_MultiSig_Txn_Witness_Signing extends CustomJavaAction<java.lang.
 		// BEGIN USER CODE
 		try {
 			var utils = new Utils("preprod");
-			/*// Decrypt the mnemonic
-			EncryptDecryptMnemonic decryptMnemonic = new EncryptDecryptMnemonic();
-			String mnemonic = decryptMnemonic.decrypt(this.EncryptedMnemonic, this.Passphrase);*/
 			EncryptDecryptMnemonic decryptMnemonic = new EncryptDecryptMnemonic();
 			String mnemonic = decryptMnemonic.decrypt(this.EncryptedMnemonic, this.WalletPassword);
-			System.out.println("================================");
-			System.out.println(mnemonic);
-			LOG.info(mnemonic);
-			System.out.println("================================");
 			LOG.info(utils.getCardanoNetwork());
 			System.out.println(utils.getCardanoNetwork());
 			Account signingAccount = new Account(utils.getCardanoNetwork(), mnemonic);
@@ -93,8 +86,8 @@ public class JA_MultiSig_Txn_Witness_Signing extends CustomJavaAction<java.lang.
 			Transaction transaction = objectMapper.readValue(this.Txn.getSerializedTxn(), Transaction.class); */
 			Transaction transaction = Transaction.deserialize(HexUtil.decodeHexString(this.Txn.getCborOriginal()));
 
-			LOG.info("transactio deserialized");
-			LOG.info(transaction);
+			LOG.debug("transactio deserialized");
+			LOG.debug(transaction);
 			Transaction witnessSignedTransaction = signingAccount.sign(transaction);
 			this.TxnSigning.setSignedTxnCbor(witnessSignedTransaction.serializeToHex()); //serialize the original transaction so witnesses can sign it independently.
 		} catch (Exception e) {
@@ -114,7 +107,7 @@ public class JA_MultiSig_Txn_Witness_Signing extends CustomJavaAction<java.lang.
 	@java.lang.Override
 	public java.lang.String toString()
 	{
-		return "JA_MultiSig_Txn_Witness_Signing";
+		return "JA_MultiSig_Transaction_Sign";
 	}
 
 	// BEGIN EXTRA CODE

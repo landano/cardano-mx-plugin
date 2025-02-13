@@ -139,7 +139,7 @@ public class JA_Mint_NFT extends CustomJavaAction<java.lang.String>
 	        	ObjectMapper objectMapper = new ObjectMapper();
 	            NativeScript nativeScript = objectMapper.readValue(this.Policy.getScriptHash(), NativeScript.class);
 	            policy = new Policy(nativeScript);
-	            policy.addKey(new SecretKey(encryptDecrypt.decrypt(this.Policy.getPrivateKey(), this.PolicyPassphrase)));
+	            policy.addKey(new SecretKey(encryptDecrypt.decrypt(this.Policy.getPKey(), this.PolicyPassphrase)));
 	        } catch (Exception e) {
 	        	System.out.println("Json object mapper read value error");
 	        	e.printStackTrace();

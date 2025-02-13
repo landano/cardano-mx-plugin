@@ -63,27 +63,9 @@ public class JA_CreatePolicy extends CustomJavaAction<java.lang.String>
 	    this.Policy.setScriptHash(JsonUtil.getPrettyJson(policy.getPolicyScript()));
 	    String cborHex = policy.getPolicyKeys().get(0).getCborHex();
 	    EncryptDecryptMnemonic encryptDecryptMnemonic = new EncryptDecryptMnemonic();
-	    this.Policy.setPrivateKey(encryptDecryptMnemonic.encrypt(cborHex, this.PolicyPassphrase));
+	    this.Policy.setPKey(encryptDecryptMnemonic.encrypt(cborHex, this.PolicyPassphrase));
 	    return cborHex;
 	    
-		/* ScriptAtLeast scriptAtLeast = new ScriptAtLeast(this.Policy.getAllowedWitnesses());
-
-								// .addScript(scriptPubkey1)
-								// .addScript(scriptPubkey2)
-								// .addScript(scriptPubkey3);
-		this.WitnessList.forEach(witness -> 
-		{
-			// AddressProvider.getBaseAddress(witness, Networks.preprod()).toBech32();
-			// String receiverAddress = witness.getReceiverAddress();
-			
-			// VerificationKey witnessVerificationKey = VerificationKey.create(receiverAddress.getBytes());
-			// ScriptPubkey scriptPubkey = ScriptPubkey.create(witnessVerificationKey);
-			// scriptAtLeast.addScript(scriptPubkey);
-		});
-		return this.Policy.getMendixObject();
-		// throw new com.mendix.systemwideinterfaces.MendixRuntimeException("Java action was not implemented");
-		 *
-		 */
 		// END USER CODE
 	}
 

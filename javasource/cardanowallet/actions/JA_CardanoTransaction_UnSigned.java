@@ -89,36 +89,6 @@ public class JA_CardanoTransaction_UnSigned extends CustomJavaAction<java.lang.S
 
 		String bfProjectId = cardanowallet.proxies.constants.Constants.getBLOCKFROST_PROJECTID();
 		
-/*		BFBackendService backendService =
-				new BFBackendService(blockfrostUrl, bfProjectId);
-
-		Output output1 = Output.builder()
-				.address(receiverAddress1)
-				.assetName(LOVELACE)
-				.qty(adaToLovelace(this.Amount.doubleValue()))
-				.build();
-		
-		//MessageMetadata metadata = MessageMetadata.create()
-		//.add(this.TransactionMetaData);
-				
-		TxBuilder txBuilder = output1.outputBuilder()
-				.buildInputs(InputBuilders.createFromSender(senderAddress, senderAddress))
-				//.andThen(AuxDataProviders.metadataProvider(metadata))
-				.andThen(BalanceTxBuilders.balanceTx(senderAddress, 1));
-		
-		DefaultUtxoSupplier utxoSupplier = new DefaultUtxoSupplier(backendService.getUtxoService());
-		DefaultProtocolParamsSupplier protocolParamsSupplier = new DefaultProtocolParamsSupplier(backendService.getEpochService());
-		
-		Transaction unsignedTransaction = TxBuilderContext.init(utxoSupplier, protocolParamsSupplier)
-											.build(txBuilder);
-		
-		unsignedTransaction.setAuxiliaryData(null);
-		unsignedTransaction.setWitnessSet(null);
-		LOG.info("Unsigned Transaction : " + unsignedTransaction.toJson());
-		
-		String unsignedTransactionCbor = unsignedTransaction.serializeToHex();
-		LOG.debug("Finish Execution of JA_CardanoTransaction_UnSigned");
-		return unsignedTransactionCbor;*/
 		Tx tx1 = new Tx()
                 .payToAddress(receiverAddress1, Amount.ada(this.AmountInAda.doubleValue()))
                 .attachMetadata(MessageMetadata.create().add("This is a test message 2"))

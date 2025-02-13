@@ -51,7 +51,7 @@ import com.mendix.webui.CustomJavaAction;
 import cardanowallet.Utils;
 import com.mendix.systemwideinterfaces.core.IMendixObject;
 
-public class JA_MultSig_Transaction_Create extends CustomJavaAction<java.lang.Void>
+public class JA_MultiSig_Transaction_Build extends CustomJavaAction<java.lang.Void>
 {
 	/** @deprecated use MxTxn.getMendixObject() instead. */
 	@java.lang.Deprecated(forRemoval = true)
@@ -66,7 +66,7 @@ public class JA_MultSig_Transaction_Create extends CustomJavaAction<java.lang.Vo
 	private final IMendixObject __MxScript;
 	private final cardanowallet.proxies.Policy MxScript;
 
-	public JA_MultSig_Transaction_Create(
+	public JA_MultiSig_Transaction_Build(
 		IContext context,
 		IMendixObject _mxTxn,
 		java.util.List<IMendixObject> _txnSigners,
@@ -133,7 +133,7 @@ public class JA_MultSig_Transaction_Create extends CustomJavaAction<java.lang.Vo
 	@java.lang.Override
 	public java.lang.String toString()
 	{
-		return "JA_MultSig_Transaction_Create";
+		return "JA_MultiSig_Transaction_Build";
 	}
 
 	// BEGIN EXTRA CODE

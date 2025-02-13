@@ -11,19 +11,31 @@ package cardanowallet.actions;
 
 import com.mendix.systemwideinterfaces.core.IContext;
 import com.mendix.webui.CustomJavaAction;
+import cardanowallet.Utils;
 
-public class JA_NFT_Create extends CustomJavaAction<java.lang.String>
+public class ConvertPublicAddressToHex extends CustomJavaAction<java.lang.String>
 {
-	public JA_NFT_Create(IContext context)
+	private final java.lang.String PublicAddress;
+
+	public ConvertPublicAddressToHex(
+		IContext context,
+		java.lang.String _publicAddress
+	)
 	{
 		super(context);
+		this.PublicAddress = _publicAddress;
 	}
 
 	@java.lang.Override
 	public java.lang.String executeAction() throws Exception
 	{
 		// BEGIN USER CODE
-		throw new com.mendix.systemwideinterfaces.MendixRuntimeException("Java action was not implemented");
+		try {
+			String witnessAddressHex = Utils.ConvertPublicAddressToHex(this.PublicAddress);
+			return witnessAddressHex;
+		} catch (Exception e) {
+			throw new Exception("Error converting public address to hex: " + e.getMessage());
+		}
 		// END USER CODE
 	}
 
@@ -34,7 +46,7 @@ public class JA_NFT_Create extends CustomJavaAction<java.lang.String>
 	@java.lang.Override
 	public java.lang.String toString()
 	{
-		return "JA_NFT_Create";
+		return "ConvertPublicAddressToHex";
 	}
 
 	// BEGIN EXTRA CODE

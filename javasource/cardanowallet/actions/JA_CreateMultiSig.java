@@ -68,21 +68,30 @@ public class JA_CreateMultiSig extends CustomJavaAction<java.lang.String>
 	public java.lang.String executeAction() throws Exception
 	{
 		// BEGIN USER CODE
-		ScriptAtLeast scriptAtLeast = new ScriptAtLeast(this.Policy.getRequiredSigners());
-		this.utils = new Utils(this.Policy.getCardanonetwork().name()); // derive the network from the policy. meaning that at UI specify an input for cardano network. Also this will give you validation for the witnesses to be of the same network like the script network. 
-		this.WitnessList.forEach(witness -> 
-		{
-			String witnessAddressHex = Utils.ConvertPublicAddressToHex(witness.getAddress());
-			witness.setPublicKeyHash(witnessAddressHex);
-			ScriptPubkey scriptPubkey = new ScriptPubkey(witnessAddressHex);
-			scriptAtLeast.addScript(scriptPubkey);
-		});
-	    this.Policy.setScriptHash(JsonUtil.getPrettyJson(scriptAtLeast));
-	    String nativeScriptBech32Address = AddressProvider.getEntAddress(scriptAtLeast, this.utils.getCardanoNetwork()).toBech32();
-	    this.Policy.setAddress(nativeScriptBech32Address);
-	    this.Policy.setAddressHex(Utils.ConvertPublicAddressToHex(nativeScriptBech32Address));
-        
-		return nativeScriptBech32Address;
+		try {
+			ScriptAtLeast scriptAtLeast = new ScriptAtLeast(this.Policy.getRequiredSigners());
+			this.utils = new Utils(this.Policy.getCardanonetwork().name()); // derive the network from the policy. meaning that at UI specify an input for cardano network. Also this will give you validation for the witnesses to be of the same network like the script network. 
+			this.WitnessList.forEach(witness -> 
+			{
+				String witnessAddressHex;
+				try {
+					witnessAddressHex = Utils.ConvertPublicAddressToHex(witness.getAddress());
+					witness.setPublicKeyHash(witnessAddressHex);
+					ScriptPubkey scriptPubkey = new ScriptPubkey(witnessAddressHex);
+					scriptAtLeast.addScript(scriptPubkey);
+				} catch (Exception e) {
+					throw new RuntimeException("Error converting public address to hex: " + e.getMessage());
+				}
+			});
+		    this.Policy.setScriptHash(JsonUtil.getPrettyJson(scriptAtLeast));
+		    String nativeScriptBech32Address = AddressProvider.getEntAddress(scriptAtLeast, this.utils.getCardanoNetwork()).toBech32();
+		    this.Policy.setAddress(nativeScriptBech32Address);
+		    this.Policy.setAddressHex(Utils.ConvertPublicAddressToHex(nativeScriptBech32Address));
+	        
+			return nativeScriptBech32Address;
+		} catch (Exception e) {
+			throw new Exception("Error creating multisig policy: " + e.getMessage());
+		}
 		// END USER CODE
 	}
 

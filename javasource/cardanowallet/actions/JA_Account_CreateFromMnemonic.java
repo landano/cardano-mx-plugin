@@ -19,12 +19,12 @@ import com.mendix.systemwideinterfaces.core.IMendixObject;
 import com.bloxbean.cardano.client.backend.blockfrost.service.*;
 import com.mendix.systemwideinterfaces.core.*;
 
-public class JA_CreateAccountFromMnemonic extends CustomJavaAction<IMendixObject>
+public class JA_Account_CreateFromMnemonic extends CustomJavaAction<IMendixObject>
 {
 	private final java.lang.String mnemonic;
 	private final cardanowallet.proxies.Enum_CardanoNetwork CardanoNetworkEnum;
 
-	public JA_CreateAccountFromMnemonic(
+	public JA_Account_CreateFromMnemonic(
 		IContext context,
 		java.lang.String _mnemonic,
 		java.lang.String _cardanoNetworkEnum
@@ -58,39 +58,8 @@ public class JA_CreateAccountFromMnemonic extends CustomJavaAction<IMendixObject
 		wallet.setBaseAddress(newAccount.baseAddress());
 		wallet.setStakeAddress(newAccount.stakeAddress());
 
-		/*
-		 * 
-		 *      // Initialize Blockfrost Backend Service
-        BaseBackendService backendService = new BlockfrostBackendService(API_KEY);
-
-        // Get the Address Service
-        AddressService addressService = backendService.getAddressService();
-
-        try {
-            // Get the UTXOs for the address
-            List<Utxo> utxos = addressService.getUtxos(ADDRESS);
-
-            // Calculate the total balance
-            long totalBalance = 0;
-            for (Utxo utxo : utxos) {
-                List<Amount> amounts = utxo.getAmount();
-                for (Amount amount : amounts) {
-                    if (amount.getUnit().equalsIgnoreCase("lovelace")) {
-                        totalBalance += Long.parseLong(amount.getQuantity());
-                    }
-                }
-            }
-
-            System.out.println("Balance for address " + ADDRESS + ": " + totalBalance + " lovelace");
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-		 * 
-		 */
-
 		return wallet.getMendixObject();
 
-		// throw new com.mendix.systemwideinterfaces.MendixRuntimeException("Java action was not implemented");
 		// END USER CODE
 	}
 
@@ -101,7 +70,7 @@ public class JA_CreateAccountFromMnemonic extends CustomJavaAction<IMendixObject
 	@java.lang.Override
 	public java.lang.String toString()
 	{
-		return "JA_CreateAccountFromMnemonic";
+		return "JA_Account_CreateFromMnemonic";
 	}
 
 	// BEGIN EXTRA CODE

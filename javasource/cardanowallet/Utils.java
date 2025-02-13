@@ -102,7 +102,7 @@ public class Utils extends BaseUtils {
         initializeServices();
     }
 	
-	public static String ConvertPublicAddressToHex(String addressToHex) {
+	public static String ConvertPublicAddressToHex(String addressToHex) throws Exception {
 		String pubKeyHashHex = "";
         try {
             // The test address
@@ -122,25 +122,23 @@ public class Utils extends BaseUtils {
             // Convert byte array to hex string for display
             pubKeyHashHex = HexUtil.encodeHexString(pubKeyHash);
 
-            LOG.info("Address: " + addressToHex);
-            LOG.info("Public Key Hash: " + pubKeyHashHex);
+            LOG.debug("Address: " + addressToHex);
+            LOG.debug("Public Key Hash: " + pubKeyHashHex);
 
             // Verify if it's a pubkey hash (not a script hash)
             if (address.isPubKeyHashInPaymentPart()) {
-            	LOG.info("Confirmed: This is a public key hash");
+            	LOG.debug("Confirmed: This is a public key hash");
             } else {
-            	LOG.info("Warning: This is not a public key hash");
+            	LOG.warn("Warning: This is not a public key hash");
             }
             
 
         } catch (Exception e) {
-            LOG.error("Error processing address: " + e.getMessage());
-            LOG.error(e);
-            e.printStackTrace();
+        	throw new Exception("Error processing address: " + e.getMessage());
         }
         return pubKeyHashHex;
     }
 	
-	public static ILogNode LOG = Core.getLogger("LandanoTest");
+	public static ILogNode LOG = Core.getLogger("CardanoWallet");
 
 }
