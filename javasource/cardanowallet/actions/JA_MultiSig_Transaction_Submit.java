@@ -32,11 +32,11 @@ public class JA_MultiSig_Transaction_Submit extends CustomJavaAction<java.lang.S
 	/** @deprecated use com.mendix.utils.ListUtils.map(TxnSigningList, com.mendix.systemwideinterfaces.core.IEntityProxy::getMendixObject) instead. */
 	@java.lang.Deprecated(forRemoval = true)
 	private final java.util.List<IMendixObject> __TxnSigningList;
-	private final java.util.List<cardanowallet.proxies.TxnSigning> TxnSigningList;
+	private final java.util.List<cardanowallet.proxies.TransactionSigning> TxnSigningList;
 	/** @deprecated use Txn.getMendixObject() instead. */
 	@java.lang.Deprecated(forRemoval = true)
 	private final IMendixObject __Txn;
-	private final cardanowallet.proxies.Txn Txn;
+	private final cardanowallet.proxies.Transaction Txn;
 	private final cardanowallet.proxies.Enum_CardanoNetwork CardanoNetwork;
 
 	public JA_MultiSig_Transaction_Submit(
@@ -51,10 +51,10 @@ public class JA_MultiSig_Transaction_Submit extends CustomJavaAction<java.lang.S
 		this.TxnSigningList = java.util.Optional.ofNullable(_txnSigningList)
 			.orElse(java.util.Collections.emptyList())
 			.stream()
-			.map(txnSigningListElement -> cardanowallet.proxies.TxnSigning.initialize(getContext(), txnSigningListElement))
+			.map(txnSigningListElement -> cardanowallet.proxies.TransactionSigning.initialize(getContext(), txnSigningListElement))
 			.collect(java.util.stream.Collectors.toList());
 		this.__Txn = _txn;
-		this.Txn = _txn == null ? null : cardanowallet.proxies.Txn.initialize(getContext(), _txn);
+		this.Txn = _txn == null ? null : cardanowallet.proxies.Transaction.initialize(getContext(), _txn);
 		this.CardanoNetwork = _cardanoNetwork == null ? null : cardanowallet.proxies.Enum_CardanoNetwork.valueOf(_cardanoNetwork);
 	}
 
@@ -62,19 +62,13 @@ public class JA_MultiSig_Transaction_Submit extends CustomJavaAction<java.lang.S
 	public java.lang.String executeAction() throws Exception
 	{
 		// BEGIN USER CODE
-        Transaction transaction = Transaction.deserialize(HexUtil.decodeHexString(this.Txn.getCborOriginal()));
+        Transaction transaction = Transaction.deserialize(HexUtil.decodeHexString(this.Txn.getUnsignedCBOR()));
 		var utils = new Utils(this.CardanoNetwork.getCaption());
 		this.TxnSigningList.forEach(TxnSigningMx -> 
 		{
 			Transaction witnessSignedTxn;
 			try {
-				witnessSignedTxn = Transaction.deserialize(HexUtil.decodeHexString(TxnSigningMx.getSignedTxnCbor()));
-				LOG.info("=======witnessSignedTx===witnessSet===");
-				LOG.info(witnessSignedTxn.getWitnessSet());
-				LOG.info("=======witnessSignedTx===VKeywitnessSet===");
-				LOG.info(witnessSignedTxn.getWitnessSet().getVkeyWitnesses());
-				LOG.info("=======witnessSignedTx===VKeywitnessSet===get(0)=====");
-				LOG.info(witnessSignedTxn.getWitnessSet().getVkeyWitnesses().get(0));
+				witnessSignedTxn = Transaction.deserialize(HexUtil.decodeHexString(TxnSigningMx.getSignedCBOR()));
 				addWitness(transaction,witnessSignedTxn);
 			} catch (CborDeserializationException e) {
 				// TODO Auto-generated catch block
@@ -86,9 +80,8 @@ public class JA_MultiSig_Transaction_Submit extends CustomJavaAction<java.lang.S
         Result<String> result = utils.backendService.getTransactionService().submitTransaction(transaction.serialize());
         LOG.info("MultiSig Transaction submitted");
         LOG.info(result);
-        System.out.println(result);
         if(result.isSuccessful()) {
-        	this.Txn.setCborFinal(transaction.serializeToHex());
+        	this.Txn.setSignedCbor(transaction.serializeToHex());
         	this.Txn.setTransactionId(result.getValue());
         	LOG.info("MultiSig Transaction submitted successfully "+ result.getValue());
         	utils.waitForTransactionHash(result); // we'll need a queuing system.
@@ -112,7 +105,7 @@ public class JA_MultiSig_Transaction_Submit extends CustomJavaAction<java.lang.S
 	}
 
 	// BEGIN EXTRA CODE
-	public static ILogNode LOG = Core.getLogger("LandanoTest");
+	public static ILogNode LOG = Core.getLogger(cardanowallet.proxies.constants.Constants.getLogNodeName());
 	
 	/**
 	 * Ensures the transaction has a witness set and appends a signing witness from another transaction.

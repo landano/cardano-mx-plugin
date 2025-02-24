@@ -28,11 +28,11 @@ import com.bloxbean.cardano.client.function.helper.SignerProviders;
 import com.bloxbean.cardano.client.transaction.spec.Transaction;
 import com.mendix.systemwideinterfaces.core.IContext;
 import com.mendix.webui.CustomJavaAction;
+import cardanowallet.EncryptDecryptMnemonic;
 import static com.bloxbean.cardano.client.common.CardanoConstants.LOVELACE;
 import static com.bloxbean.cardano.client.common.ADAConversionUtil.adaToLovelace;
 import com.mendix.core.Core;
 import com.mendix.logging.ILogNode;
-import cardanowallet.EncryptDecryptMnemonic;
 
 public class JA_CardanoTransaction extends CustomJavaAction<java.lang.String>
 {
@@ -85,11 +85,9 @@ public class JA_CardanoTransaction extends CustomJavaAction<java.lang.String>
 		}
 
 		// Decrypt the mnemonic
-		EncryptDecryptMnemonic decryptMnemonic = new EncryptDecryptMnemonic();
-		String mnemonic = decryptMnemonic.decrypt(this.EncryptedMnemonic, this.Passphrase);
-
+		String mnemonic = EncryptDecryptMnemonic.decrypt(this.EncryptedMnemonic, this.Passphrase);
+		
 		Account senderAccount = new Account(selectedNetwork, mnemonic);
-		LOG.info(senderAccount);
 		String senderAddress = senderAccount.baseAddress();
 		
 		String receiverAddress1 = this.ReceiverAddress;

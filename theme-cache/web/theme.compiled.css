@@ -27712,6 +27712,13 @@ input[type=checkbox].three-state-checkbox + .control-label {
   box-shadow: 0px 0px 5px 0px rgba(0, 0, 0, 0.1019607843);
   border-radius: 10px;
 }
+.card.margin-none {
+  margin: 0;
+}
+.card.margin-horizontal-none {
+  margin-left: 0;
+  margin-right: 0;
+}
 
 .map-fullwidth {
   width: 100%;
@@ -27805,6 +27812,14 @@ input[type=checkbox].three-state-checkbox + .control-label {
 
 .rounded {
   border-radius: 10px;
+}
+
+.wizard-body {
+  display: flex;
+  justify-content: center;
+}
+.wizard-body .mx-dataview {
+  width: 600px;
 }
 
 .mx-dataview {

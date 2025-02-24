@@ -61,25 +61,6 @@ public class JA_Account_GenerateMnemonics extends CustomJavaAction<IMendixObject
 	public IMendixObject executeAction() throws Exception
 	{
 		// BEGIN USER CODE
-		//create a wallet -> create accounts and attach them to this wallet-> generate mnenomics (recovery phrase)
-		// confirm that I confirm that nobody can see my screen, because anyone who knows my recovery phrase will be able to spend the funds in my wallet.
-		// show the list of mnenomics
-		// capture the list of mnenomics (confirm the recovery phrase)
-		/*
-			List<String> mnenomicList = new ArrayList<String>();
-			List<IMendixObject> mnenomicWordMxObjects = new ArrayList<IMendixObject>();
-			Account account = new Account(Net);
-			String mnemonicSentence = account.mnemonic();
-			String[] mnenomicArray = mnemonicSentence.split(" ");
-			IContext context = getContext();
-			for(String mnemonicWord : mnenomicArray) {
-				Mnemonic_word mnemonicWordMx = new Mnemonic_word(context);
-				mnemonicWordMx.setValue(mnemonicWord);
-				mnenomicWordMxObjects.add((IMendixObject) mnemonicWordMx);
-			}
-
-			return mnenomicWordMxObjects;
-		*/
 		IContext context = getContext();
 		Network selectedNetwork;
 		String networkString = this.Wallet.getCardanoNetwork().name();
@@ -99,9 +80,6 @@ public class JA_Account_GenerateMnemonics extends CustomJavaAction<IMendixObject
 		this.Wallet.setBaseAddress(newAccount.baseAddress());
 		this.Wallet.setStakeAddress(newAccount.stakeAddress());
 
-		// create a sentence object
-		// create list of mnemonic words for us on UI
-		// create object
 		IMendixObject newObject = Core.instantiate(context, "CardanoWallet.Mnemonic_sentence");
 		cardanowallet.proxies.Mnemonic_sentence mnemonicSentenceMx = cardanowallet.proxies.Mnemonic_sentence.initialize(context, newObject);
 		mnemonicSentenceMx.setCompleteSentence(mnemonicSentence);

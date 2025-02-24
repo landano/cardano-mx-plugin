@@ -9,59 +9,36 @@
 
 package cardanowallet.actions;
 
-import com.bloxbean.cardano.client.account.Account;
-import com.bloxbean.cardano.client.backend.blockfrost.common.Constants;
-import com.bloxbean.cardano.client.common.model.Network;
-import com.bloxbean.cardano.client.common.model.Networks;
-import com.bloxbean.cardano.client.crypto.SecretKey;
-import com.mendix.systemwideinterfaces.core.IContext;
-import com.mendix.webui.CustomJavaAction;
-import com.mendix.systemwideinterfaces.core.IMendixObject;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.commons.lang3.SystemUtils;
+import com.bloxbean.cardano.client.account.Account;
 import com.bloxbean.cardano.client.api.model.Result;
-import com.bloxbean.cardano.client.backend.api.DefaultProtocolParamsSupplier;
-import com.bloxbean.cardano.client.backend.api.DefaultUtxoSupplier;
+import com.bloxbean.cardano.client.api.util.PolicyUtil;
+import com.bloxbean.cardano.client.backend.blockfrost.common.Constants;
 import com.bloxbean.cardano.client.backend.blockfrost.service.BFBackendService;
 import com.bloxbean.cardano.client.cip.cip25.NFT;
 import com.bloxbean.cardano.client.cip.cip25.NFTFile;
 import com.bloxbean.cardano.client.cip.cip25.NFTMetadata;
-import com.bloxbean.cardano.client.function.TxBuilder;
-import com.bloxbean.cardano.client.function.TxBuilderContext;
 import com.bloxbean.cardano.client.function.helper.SignerProviders;
-import com.bloxbean.cardano.client.metadata.helper.JsonNoSchemaToMetadataConverter;
+import com.bloxbean.cardano.client.metadata.cbor.CBORMetadataList;
+import com.bloxbean.cardano.client.metadata.cbor.CBORMetadataMap;
 import com.bloxbean.cardano.client.quicktx.QuickTxBuilder;
 import com.bloxbean.cardano.client.quicktx.Tx;
 import com.bloxbean.cardano.client.transaction.spec.Asset;
-import com.bloxbean.cardano.client.transaction.spec.MultiAsset;
 import com.bloxbean.cardano.client.transaction.spec.Policy;
-import com.bloxbean.cardano.client.transaction.spec.Transaction;
-import com.bloxbean.cardano.client.transaction.spec.TransactionOutput;
-import com.bloxbean.cardano.client.transaction.spec.Value;
 import com.bloxbean.cardano.client.transaction.spec.script.NativeScript;
-import com.bloxbean.cardano.client.api.util.PolicyUtil;
-import static com.bloxbean.cardano.client.function.helper.AuxDataProviders.metadataProvider;
-import static com.bloxbean.cardano.client.function.helper.BalanceTxBuilders.balanceTx;
-import static com.bloxbean.cardano.client.function.helper.InputBuilders.createFromSender;
-import static com.bloxbean.cardano.client.function.helper.MintCreators.mintCreator;
-import static com.bloxbean.cardano.client.function.helper.OutputBuilders.createFromMintOutput;
-import static com.bloxbean.cardano.client.function.helper.SignerProviders.signerFrom;
-import static com.bloxbean.cardano.client.common.CardanoConstants.LOVELACE;
-import static com.bloxbean.cardano.client.common.ADAConversionUtil.adaToLovelace;
-import com.mendix.core.Core;
-import com.mendix.logging.ILogNode;
-import cardanowallet.EncryptDecryptMnemonic;
-import com.bloxbean.cardano.client.util.JsonUtil;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.bloxbean.cardano.client.metadata.Metadata;
-import com.bloxbean.cardano.client.metadata.cbor.CBORMetadataList;
-import com.bloxbean.cardano.client.metadata.cbor.CBORMetadataMap;
-import co.nstant.in.cbor.model.DataItem;
+import com.mendix.core.Core;
+import com.mendix.logging.ILogNode;
+import com.mendix.systemwideinterfaces.core.IContext;
+import com.mendix.systemwideinterfaces.core.IMendixObject;
+import com.mendix.webui.CustomJavaAction;
+import cardanowallet.EncryptDecryptMnemonic;
+import cardanowallet.Utils;
 import co.nstant.in.cbor.model.UnicodeString;
 
 public class JA_Mint_NFT extends CustomJavaAction<java.lang.String>
@@ -124,28 +101,28 @@ public class JA_Mint_NFT extends CustomJavaAction<java.lang.String>
 	public java.lang.String executeAction() throws Exception
 	{
 		// BEGIN USER CODE
-		setCardanoNetwork(CardanoNetwork.name()); //sets up blockfrostUrl and selectedNetwork, 
+		Utils utils = new Utils(this.Policy.getCardanonetwork().toString().toLowerCase());
 		String bfProjectId = cardanowallet.proxies.constants.Constants.getBLOCKFROST_PROJECTID();
         BFBackendService backendService = new BFBackendService(this.blockfrostUrl, bfProjectId);
-        EncryptDecryptMnemonic encryptDecrypt = new EncryptDecryptMnemonic();
-		sender = new Account(this.selectedNetwork, encryptDecrypt.decrypt(this.EncryptedMnemonic, this.Passphrase));
+		String mnemonic = EncryptDecryptMnemonic.decrypt(this.EncryptedMnemonic, this.Passphrase);
+		sender = new Account(utils.getCardanoNetwork(), mnemonic);
         String senderAddress = sender.baseAddress();
         LOG.info("Sender address"+senderAddress);
 
         Policy policy = null;
         if(this.Policy != null) {
-        	LOG.info("Using existing mx policy");
+        	LOG.debug("Using existing mx policy");
 	        try {
-	        	ObjectMapper objectMapper = new ObjectMapper();
-	            NativeScript nativeScript = objectMapper.readValue(this.Policy.getScriptHash(), NativeScript.class);
+	    		NativeScript nativeScript = NativeScript.deserializeJson(this.Policy.getScriptJSON());
 	            policy = new Policy(nativeScript);
-	            policy.addKey(new SecretKey(encryptDecrypt.decrypt(this.Policy.getPKey(), this.PolicyPassphrase)));
+	            
+	            //TODO: find out how to add key to policy
 	        } catch (Exception e) {
 	        	System.out.println("Json object mapper read value error");
 	        	e.printStackTrace();
 	        }
         } else {
-        	LOG.info("Creating a fresh Policy for the NFT");
+        	LOG.debug("Creating a fresh Policy for the NFT");
         	policy = PolicyUtil.createMultiSigScriptAllPolicy(this.MxNFT.getPolicyName(),1);	
         }
 
@@ -162,11 +139,9 @@ public class JA_Mint_NFT extends CustomJavaAction<java.lang.String>
         }
 		try {
             Map<String, Object> properties = createPropertiesFromJsonString(stringMetadata);
-            System.out.println(properties);
 
             // Now you can use this properties map to generate NFT metadata
             generateNFTMetadata(nft, properties);
-            System.out.println(nft.toString());
             for (cardanowallet.proxies.NFTFile entry : this.NFTFileList) {
             	nft.addFile(NFTFile.create()
             			.name(entry.getName())
@@ -191,8 +166,6 @@ public class JA_Mint_NFT extends CustomJavaAction<java.lang.String>
                 .withSigner(SignerProviders.signerFrom(policy))
                 .complete();
 
-        System.out.println(result);
-
         if (result.isSuccessful())
             LOG.info("Transaction Id: " + result.getValue());
         else
@@ -213,27 +186,9 @@ public class JA_Mint_NFT extends CustomJavaAction<java.lang.String>
 	}
 
 	// BEGIN EXTRA CODE
-	private Network selectedNetwork;
     private String blockfrostUrl = Constants.BLOCKFROST_MAINNET_URL;
 	private Account sender;
     public static ILogNode LOG = Core.getLogger("LandanoTest - NFT Creation");
-
-    public void setCardanoNetwork(String networkString) {
-        if(networkString.equalsIgnoreCase("preprod")) {
-			selectedNetwork = Networks.preprod();
-			blockfrostUrl = Constants.BLOCKFROST_PREPROD_URL;
-		} else if(networkString.equalsIgnoreCase("testnet")) {
-			selectedNetwork = Networks.testnet();
-			blockfrostUrl = Constants.BLOCKFROST_TESTNET_URL;
-		} else if(networkString.equalsIgnoreCase("preview")) {
-			blockfrostUrl = Constants.BLOCKFROST_PREVIEW_URL;
-			selectedNetwork = Networks.preview();
-		} else {
-			selectedNetwork = Networks.mainnet();
-			blockfrostUrl = Constants.BLOCKFROST_MAINNET_URL;
-		}
-    }
-    
     
     public static NFT generateNFTMetadata(NFT nft, Map<String, Object> properties) {
     	LOG.info("NFT Map::::::");

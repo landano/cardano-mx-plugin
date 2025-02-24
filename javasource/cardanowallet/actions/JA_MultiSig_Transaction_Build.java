@@ -9,120 +9,83 @@
 
 package cardanowallet.actions;
 
-import com.bloxbean.cardano.client.account.Account;
-import com.bloxbean.cardano.client.api.exception.ApiException;
-import com.bloxbean.cardano.client.api.model.Result;
-import com.bloxbean.cardano.client.api.model.Utxo;
-import com.bloxbean.cardano.client.backend.blockfrost.common.Constants;
-import com.bloxbean.cardano.client.backend.blockfrost.service.BFBackendService;
-import com.bloxbean.cardano.client.cip.cip20.MessageMetadata;
-import com.bloxbean.cardano.client.coinselection.UtxoSelectionStrategy;
-import com.bloxbean.cardano.client.coinselection.impl.DefaultUtxoSelectionStrategyImpl;
-import com.bloxbean.cardano.client.common.model.Networks;
-import com.bloxbean.cardano.client.exception.CborDeserializationException;
-import com.bloxbean.cardano.client.exception.CborSerializationException;
+import static com.bloxbean.cardano.client.common.CardanoConstants.LOVELACE;
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.List;
 import com.bloxbean.cardano.client.function.Output;
 import com.bloxbean.cardano.client.function.TxBuilder;
 import com.bloxbean.cardano.client.function.TxBuilderContext;
-import com.bloxbean.cardano.client.function.helper.AuxDataProviders;
+import com.bloxbean.cardano.client.function.TxOutputBuilder;
 import com.bloxbean.cardano.client.function.helper.BalanceTxBuilders;
 import com.bloxbean.cardano.client.function.helper.InputBuilders;
-import com.bloxbean.cardano.client.transaction.spec.*;
-import com.bloxbean.cardano.client.transaction.spec.script.ScriptAtLeast;
-import com.bloxbean.cardano.client.transaction.spec.script.ScriptPubkey;
-import com.bloxbean.cardano.client.util.HexUtil;
-import com.bloxbean.cardano.client.util.JsonUtil;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.bloxbean.cardano.client.backend.api.DefaultUtxoSupplier;
-import com.bloxbean.cardano.client.backend.api.DefaultProtocolParamsSupplier;
-import static com.bloxbean.cardano.client.common.ADAConversionUtil.adaToLovelace;
-import java.io.IOException;
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import static com.bloxbean.cardano.client.common.CardanoConstants.LOVELACE;
-import static com.bloxbean.cardano.client.common.CardanoConstants.ONE_ADA;
+import com.bloxbean.cardano.client.transaction.spec.script.NativeScript;
 import com.mendix.core.Core;
 import com.mendix.logging.ILogNode;
 import com.mendix.systemwideinterfaces.core.IContext;
+import com.mendix.systemwideinterfaces.core.IMendixObject;
 import com.mendix.webui.CustomJavaAction;
 import cardanowallet.Utils;
-import com.mendix.systemwideinterfaces.core.IMendixObject;
+import cardanowallet.proxies.RecipientNP;
+import cardanowallet.proxies.TransactionNP;
 
-public class JA_MultiSig_Transaction_Build extends CustomJavaAction<java.lang.Void>
+public class JA_MultiSig_Transaction_Build extends CustomJavaAction<java.lang.String>
 {
-	/** @deprecated use MxTxn.getMendixObject() instead. */
+	/** @deprecated use Transaction.getMendixObject() instead. */
 	@java.lang.Deprecated(forRemoval = true)
-	private final IMendixObject __MxTxn;
-	private final cardanowallet.proxies.Txn MxTxn;
-	/** @deprecated use com.mendix.utils.ListUtils.map(TxnSigners, com.mendix.systemwideinterfaces.core.IEntityProxy::getMendixObject) instead. */
-	@java.lang.Deprecated(forRemoval = true)
-	private final java.util.List<IMendixObject> __TxnSigners;
-	private final java.util.List<cardanowallet.proxies.TxnSigning> TxnSigners;
-	/** @deprecated use MxScript.getMendixObject() instead. */
-	@java.lang.Deprecated(forRemoval = true)
-	private final IMendixObject __MxScript;
-	private final cardanowallet.proxies.Policy MxScript;
+	private final IMendixObject __Transaction;
+	private final cardanowallet.proxies.TransactionNP Transaction;
 
 	public JA_MultiSig_Transaction_Build(
 		IContext context,
-		IMendixObject _mxTxn,
-		java.util.List<IMendixObject> _txnSigners,
-		IMendixObject _mxScript
+		IMendixObject _transaction
 	)
 	{
 		super(context);
-		this.__MxTxn = _mxTxn;
-		this.MxTxn = _mxTxn == null ? null : cardanowallet.proxies.Txn.initialize(getContext(), _mxTxn);
-		this.__TxnSigners = _txnSigners;
-		this.TxnSigners = java.util.Optional.ofNullable(_txnSigners)
-			.orElse(java.util.Collections.emptyList())
-			.stream()
-			.map(txnSignersElement -> cardanowallet.proxies.TxnSigning.initialize(getContext(), txnSignersElement))
-			.collect(java.util.stream.Collectors.toList());
-		this.__MxScript = _mxScript;
-		this.MxScript = _mxScript == null ? null : cardanowallet.proxies.Policy.initialize(getContext(), _mxScript);
+		this.__Transaction = _transaction;
+		this.Transaction = _transaction == null ? null : cardanowallet.proxies.TransactionNP.initialize(getContext(), _transaction);
 	}
 
 	@java.lang.Override
-	public java.lang.Void executeAction() throws Exception
+	public java.lang.String executeAction() throws Exception
 	{
 		// BEGIN USER CODE
-		var mxPolicy = this.MxTxn.getTxn_Policy();
-		mxPolicy = this.MxScript;
-		var networkString = this.MxTxn.getTxn_Policy().getCardanonetwork().getCaption();
-		Utils utils = new Utils(networkString);
-		String multiSigScriptAddr = this.MxScript.getAddress();// "addr_test1wzchaw4vxmmpws44ffh99eqzmlg6wr3swg36pqug8xn20ygxgqher";
-		String receiverAddress = this.MxTxn.getReceiverAddress(); //"addr_test1qr2y2yf2lwj0xn2nrhmyqe26t52twp06cp4lm2r62undytvj5ggkj79y993ds6645ewwfus90su92j554u2294wtm93s25m8cz";
-		ObjectMapper objectMapper = new ObjectMapper();
-		ScriptAtLeast multiSigScript = objectMapper.readValue(mxPolicy.getScriptHash(), ScriptAtLeast.class);
+		Utils utils = new Utils(this.Transaction.getTransactionNP_Policy().getCardanonetwork().toString().toLowerCase());
+		NativeScript nativeScript = NativeScript.deserializeJson(this.Transaction.getTransactionNP_Policy().getScriptJSON());
 		
-		BigInteger amountToTransfer = adaToLovelace(this.MxTxn.getAmountToTransfer()) ;
-		//============================================================================================================
+		List<IMendixObject> recipients = Core.retrieveByPath(getContext(), this.Transaction.getMendixObject(), cardanowallet.proxies.RecipientNP.MemberNames.RecipientNP_TransactionNP.toString());
+        
+		List<Output> outputs = new ArrayList<Output>(); 
 		
-		Output output = Output.builder()
-                .address(receiverAddress)
-                .assetName(LOVELACE)
-                .qty(amountToTransfer).build();
+		for (IMendixObject obj : recipients) {
+            RecipientNP recipient = RecipientNP.initialize(this.getContext(), obj);
+			Output output = Output.builder()
+	                .address(recipient.getAddress())
+	                .assetName(LOVELACE)
+	                .qty(BigInteger.valueOf(recipient.getAmountInLong())).build();
+			outputs.add(output);
+		}
+		
+		TxOutputBuilder outputBuilder = outputs.get(0).outputBuilder();
+		for (int i = 1; i < outputs.size(); i++) {
+		    outputBuilder = outputBuilder.and(outputs.get(i).outputBuilder());
+		}
+		
+		String scriptAddress = this.Transaction.getTransactionNP_Policy().getAddress();
+		
+		TxBuilder txBuilder = outputBuilder
+			    .buildInputs(InputBuilders.createFromSender(scriptAddress, scriptAddress))
+			    .andThen((context, transaction) -> {
+			        // Add your script manually for now
+			        transaction.getWitnessSet().getNativeScripts().add(nativeScript);
+			    })
+			    .andThen(BalanceTxBuilders.balanceTx(scriptAddress, this.Transaction.getTransactionNP_Policy().getWitnessCount()));		
 
-        //Define Txn
-        TxBuilder txBuilder = output.outputBuilder()
-            .buildInputs(InputBuilders.createFromSender(multiSigScriptAddr, multiSigScriptAddr))
-            .andThen(AuxDataProviders.metadataProvider(MessageMetadata.create().add("Multisig script txn (A,B,C) ---> (Receiver) using CCL")))
-            .andThen((context, txn) -> {
-                //Add script to the witness. Need to find a way to inject through another helper later instead of manual step
-                txn.getWitnessSet().getNativeScripts().add(multiSigScript);
-            })
-            .andThen(BalanceTxBuilders.balanceTx(multiSigScriptAddr, multiSigScript.getRequired().intValue())); //Helps to calculate fees and balance transaction
-        Transaction transaction = TxBuilderContext.init(utils.utxoSupplier, utils.protocolParamsSupplier).build(txBuilder);
-        this.MxTxn.setCborOriginal(transaction.serializeToHex()); //serialize the original transaction so witnesses can sign it independently.
+		        
+        
+        com.bloxbean.cardano.client.transaction.spec.Transaction transaction = TxBuilderContext.init(utils.utxoSupplier, utils.protocolParamsSupplier).build(txBuilder);
+        return transaction.serializeToHex(); //serialize the original transaction so witnesses can sign it independently.
 		
-		//===================================================================================================
-        LOG.info("Successful transaction creation");
-        LOG.info(transaction);
-        return null;
 		// END USER CODE
 	}
 

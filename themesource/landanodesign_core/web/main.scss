@@ -103,6 +103,15 @@
     background-color: #FFFFFF99;
     box-shadow: 0px 0px 5px 0px #0000001A;
     border-radius: 10px;
+
+    &.margin-none {
+        margin: 0;
+    }
+
+    &.margin-horizontal-none {
+        margin-left: 0;
+        margin-right: 0;
+    }
 }
 
 // #############################################
@@ -236,8 +245,23 @@
 }
 
 // #############################################
+// ##  Wizard                                 ##
+// #############################################
+.wizard-body {
+    display: flex;
+    justify-content: center;
+
+    .mx-dataview {
+        width: 600px;
+    }
+
+}
+
+
+// #############################################
 // ##  Mendix Fixes                           ##
 // #############################################
 .mx-dataview {
     height: auto;
 }
+

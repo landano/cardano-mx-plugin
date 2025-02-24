@@ -139,6 +139,6 @@ public class Utils extends BaseUtils {
         return pubKeyHashHex;
     }
 	
-	public static ILogNode LOG = Core.getLogger("CardanoWallet");
+	public static ILogNode LOG = Core.getLogger(cardanowallet.proxies.constants.Constants.getLogNodeName());
 
 }

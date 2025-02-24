@@ -9,14 +9,13 @@
 
 package cardanowallet.actions;
 
-import java.util.Base64;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import com.bloxbean.cardano.client.account.Account;
 import com.bloxbean.cardano.client.address.Address;
 import com.bloxbean.cardano.client.address.AddressProvider;
-import com.bloxbean.cardano.client.api.UtxoSupplier;
-import com.bloxbean.cardano.client.api.exception.ApiException;
 import com.bloxbean.cardano.client.api.model.Amount;
 import com.bloxbean.cardano.client.api.model.Result;
 import com.bloxbean.cardano.client.api.model.Utxo;
@@ -29,9 +28,6 @@ import com.bloxbean.cardano.client.backend.blockfrost.service.BFBackendService;
 import com.bloxbean.cardano.client.backend.model.TransactionContent;
 import com.bloxbean.cardano.client.common.model.Network;
 import com.bloxbean.cardano.client.common.model.Networks;
-import com.bloxbean.cardano.client.crypto.SecretKey;
-import com.bloxbean.cardano.client.exception.CborSerializationException;
-import com.bloxbean.cardano.client.function.helper.ScriptUtxoFinders;
 import com.bloxbean.cardano.client.function.helper.SignerProviders;
 import com.bloxbean.cardano.client.plutus.blueprint.PlutusBlueprintUtil;
 import com.bloxbean.cardano.client.plutus.blueprint.model.PlutusVersion;
@@ -40,16 +36,14 @@ import com.bloxbean.cardano.client.plutus.spec.ConstrPlutusData;
 import com.bloxbean.cardano.client.plutus.spec.PlutusData;
 import com.bloxbean.cardano.client.plutus.spec.PlutusScript;
 import com.bloxbean.cardano.client.quicktx.QuickTxBuilder;
-import com.bloxbean.cardano.client.quicktx.ScriptTx;
 import com.bloxbean.cardano.client.quicktx.Tx;
 import com.bloxbean.cardano.client.util.JsonUtil;
 import com.mendix.core.Core;
 import com.mendix.core.CoreException;
 import com.mendix.logging.ILogNode;
 import com.mendix.systemwideinterfaces.core.IContext;
-import com.mendix.webui.CustomJavaAction;
-import cardanowallet.EncryptDecryptMnemonic;
 import com.mendix.systemwideinterfaces.core.IMendixObject;
+import com.mendix.webui.CustomJavaAction;
 
 public class JA_SmartContract_Lock extends CustomJavaAction<IMendixObject>
 {
@@ -130,10 +124,18 @@ public class JA_SmartContract_Lock extends CustomJavaAction<IMendixObject>
 	 private String scriptAddr;
 	
     public String lock() {
-    	var decrypt = new EncryptDecryptMnemonic();
+		Map<String, Object> params = new HashMap<String, Object>();
+        params.put("value", this.SenderWallet.getMnemonicEncrypted()); // Adjust parameter names as needed
+        params.put("key", encryption.proxies.constants.Constants.getEncryptionKey() + this.SenderPassPhrase); // Adjust parameter names as needed
+        params.put("prefix", encryption.proxies.constants.Constants.getEncryptionPrefix()); // Adjust parameter names as needed
+        params.put("legacyKey", encryption.proxies.constants.Constants.getLegacyEncryptionKey()); // Adjust parameter names as needed
+        
+        String mnemonic = (String) Core.userActionCall("Encryption.DecryptString")
+        		.withParams(this.getContext(), params)
+        		.execute(this.getContext());
+
     	try {
     		// optionally we should allow users to input their mnemonics directly in the UI instead of even saving them on our servers.
-			String mnemonic = decrypt.decrypt(this.SenderWallet.getMnemonicEncrypted(), this.SenderPassPhrase);
     		sender = new Account(selectedNetwork, mnemonic);
 		} catch (Exception e) {
 			// TODO Auto-generated catch block

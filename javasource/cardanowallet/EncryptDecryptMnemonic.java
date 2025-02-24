@@ -19,20 +19,20 @@ public class EncryptDecryptMnemonic {
     private static final String ALGORITHM = "AES/CBC/PKCS5Padding";
     private static final String KEY_FACTORY_ALGORITHM = "PBKDF2WithHmacSHA256";
 
-    private SecretKeySpec deriveKey(String passphrase, byte[] salt) throws Exception {
+    private static SecretKeySpec deriveKey(String passphrase, byte[] salt) throws Exception {
         SecretKeyFactory factory = SecretKeyFactory.getInstance(KEY_FACTORY_ALGORITHM);
         PBEKeySpec spec = new PBEKeySpec(passphrase.toCharArray(), salt, ITERATION_COUNT, KEY_LENGTH);
         SecretKey tmp = factory.generateSecret(spec);
         return new SecretKeySpec(tmp.getEncoded(), "AES");
     }
 
-    private Cipher initCipher(int mode, SecretKeySpec key, IvParameterSpec ivSpec) throws Exception {
+    private static Cipher initCipher(int mode, SecretKeySpec key, IvParameterSpec ivSpec) throws Exception {
         Cipher cipher = Cipher.getInstance(ALGORITHM);
         cipher.init(mode, key, ivSpec);
         return cipher;
     }
 
-    public String encrypt(String mnemonic, String passphrase) throws Exception {
+    public static String encrypt(String mnemonic, String passphrase) throws Exception {
         SecureRandom random = new SecureRandom();
 
         // Generate a random salt
@@ -61,7 +61,7 @@ public class EncryptDecryptMnemonic {
         return Base64.getEncoder().encodeToString(encryptedData);
     }
 
-    public String decrypt(String encryptedData, String passphrase) throws Exception {
+    public static String decrypt(String encryptedData, String passphrase) throws Exception {
         byte[] decodedData = Base64.getDecoder().decode(encryptedData);
 
         // Extract the salt, iv, and encrypted mnemonic
@@ -84,18 +84,4 @@ public class EncryptDecryptMnemonic {
         return new String(decrypted);
     }
 
-    /*public static void main(String[] args) {
-        try {
-            String mnemonic = "example mnemonic phrase";
-            String passphrase = "securepassphrase";
-
-            String encrypted = encrypt(mnemonic, passphrase);
-            System.out.println("Encrypted: " + encrypted);
-
-            String decrypted = decrypt(encrypted, passphrase);
-            System.out.println("Decrypted: " + decrypted);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    } */
 }

@@ -9,58 +9,44 @@
 
 package cardanowallet.actions;
 
+import java.util.HashMap;
+import java.util.Map;
 import com.bloxbean.cardano.client.account.Account;
 import com.bloxbean.cardano.client.transaction.spec.Transaction;
-import com.bloxbean.cardano.client.transaction.spec.TransactionOutput;
-import com.bloxbean.cardano.client.transaction.spec.script.ScriptAtLeast;
 import com.bloxbean.cardano.client.util.HexUtil;
-import com.bloxbean.cardano.client.util.JsonUtil;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.mendix.core.Core;
 import com.mendix.logging.ILogNode;
 import com.mendix.systemwideinterfaces.core.IContext;
+import com.mendix.systemwideinterfaces.core.IMendixObject;
 import com.mendix.webui.CustomJavaAction;
 import cardanowallet.EncryptDecryptMnemonic;
 import cardanowallet.Utils;
-import cardanowallet.TransactionOutputDeserializer;
-import com.mendix.systemwideinterfaces.core.IMendixObject;
 
 public class JA_MultiSig_Transaction_Sign extends CustomJavaAction<java.lang.Boolean>
 {
-	/** @deprecated use Txn.getMendixObject() instead. */
+	/** @deprecated use TransactionSigning.getMendixObject() instead. */
 	@java.lang.Deprecated(forRemoval = true)
-	private final IMendixObject __Txn;
-	private final cardanowallet.proxies.Txn Txn;
-	/** @deprecated use TxnSigning.getMendixObject() instead. */
-	@java.lang.Deprecated(forRemoval = true)
-	private final IMendixObject __TxnSigning;
-	private final cardanowallet.proxies.TxnSigning TxnSigning;
+	private final IMendixObject __TransactionSigning;
+	private final cardanowallet.proxies.TransactionSigning TransactionSigning;
 	/** @deprecated use Wallet.getMendixObject() instead. */
 	@java.lang.Deprecated(forRemoval = true)
 	private final IMendixObject __Wallet;
 	private final cardanowallet.proxies.Wallet Wallet;
 	private final java.lang.String WalletPassword;
-	private final java.lang.String EncryptedMnemonic;
 
 	public JA_MultiSig_Transaction_Sign(
 		IContext context,
-		IMendixObject _txn,
-		IMendixObject _txnSigning,
+		IMendixObject _transactionSigning,
 		IMendixObject _wallet,
-		java.lang.String _walletPassword,
-		java.lang.String _encryptedMnemonic
+		java.lang.String _walletPassword
 	)
 	{
 		super(context);
-		this.__Txn = _txn;
-		this.Txn = _txn == null ? null : cardanowallet.proxies.Txn.initialize(getContext(), _txn);
-		this.__TxnSigning = _txnSigning;
-		this.TxnSigning = _txnSigning == null ? null : cardanowallet.proxies.TxnSigning.initialize(getContext(), _txnSigning);
+		this.__TransactionSigning = _transactionSigning;
+		this.TransactionSigning = _transactionSigning == null ? null : cardanowallet.proxies.TransactionSigning.initialize(getContext(), _transactionSigning);
 		this.__Wallet = _wallet;
 		this.Wallet = _wallet == null ? null : cardanowallet.proxies.Wallet.initialize(getContext(), _wallet);
 		this.WalletPassword = _walletPassword;
-		this.EncryptedMnemonic = _encryptedMnemonic;
 	}
 
 	@java.lang.Override
@@ -68,28 +54,17 @@ public class JA_MultiSig_Transaction_Sign extends CustomJavaAction<java.lang.Boo
 	{
 		// BEGIN USER CODE
 		try {
-			var utils = new Utils("preprod");
-			EncryptDecryptMnemonic decryptMnemonic = new EncryptDecryptMnemonic();
-			String mnemonic = decryptMnemonic.decrypt(this.EncryptedMnemonic, this.WalletPassword);
-			LOG.info(utils.getCardanoNetwork());
-			System.out.println(utils.getCardanoNetwork());
+			Utils utils = new Utils(this.Wallet.getCardanonetwork().toString().toLowerCase());
+			
+			String mnemonic = EncryptDecryptMnemonic.decrypt(this.Wallet.getMnemonicEncrypted(), this.WalletPassword);
+			
 			Account signingAccount = new Account(utils.getCardanoNetwork(), mnemonic);
-			/*
-			 * USE CBOR since its native to Cardano, avoid JSON deserialization
-			 * It has a known issue as there are some bytes array. So we need to add some custom deserializer to handle bytes
-			 * 
-			 * 
-			var objectMapper = new ObjectMapper();
-			SimpleModule module = new SimpleModule();
-			module.addDeserializer(TransactionOutput.class, new TransactionOutputDeserializer());
-			objectMapper.registerModule(module);
-			Transaction transaction = objectMapper.readValue(this.Txn.getSerializedTxn(), Transaction.class); */
-			Transaction transaction = Transaction.deserialize(HexUtil.decodeHexString(this.Txn.getCborOriginal()));
+			Transaction transaction = Transaction.deserialize(HexUtil.decodeHexString(this.TransactionSigning.getUnsignedCBOR()));
 
 			LOG.debug("transactio deserialized");
 			LOG.debug(transaction);
 			Transaction witnessSignedTransaction = signingAccount.sign(transaction);
-			this.TxnSigning.setSignedTxnCbor(witnessSignedTransaction.serializeToHex()); //serialize the original transaction so witnesses can sign it independently.
+			this.TransactionSigning.setSignedCBOR(witnessSignedTransaction.serializeToHex()); //serialize the original transaction so witnesses can sign it independently.
 		} catch (Exception e) {
 			LOG.error("Error in JA_MultiSig_Txn_Witness_Signing");
 			LOG.error(e);
