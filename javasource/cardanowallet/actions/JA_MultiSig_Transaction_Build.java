@@ -9,16 +9,13 @@
 
 package cardanowallet.actions;
 
-import static com.bloxbean.cardano.client.common.CardanoConstants.LOVELACE;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
-import com.bloxbean.cardano.client.function.Output;
-import com.bloxbean.cardano.client.function.TxBuilder;
-import com.bloxbean.cardano.client.function.TxBuilderContext;
-import com.bloxbean.cardano.client.function.TxOutputBuilder;
-import com.bloxbean.cardano.client.function.helper.BalanceTxBuilders;
-import com.bloxbean.cardano.client.function.helper.InputBuilders;
+import com.bloxbean.cardano.client.api.model.Amount;
+import com.bloxbean.cardano.client.backend.blockfrost.service.BFBackendService;
+import com.bloxbean.cardano.client.quicktx.QuickTxBuilder;
+import com.bloxbean.cardano.client.quicktx.Tx;
 import com.bloxbean.cardano.client.transaction.spec.script.NativeScript;
 import com.mendix.core.Core;
 import com.mendix.logging.ILogNode;
@@ -27,7 +24,6 @@ import com.mendix.systemwideinterfaces.core.IMendixObject;
 import com.mendix.webui.CustomJavaAction;
 import cardanowallet.Utils;
 import cardanowallet.proxies.RecipientNP;
-import cardanowallet.proxies.TransactionNP;
 
 public class JA_MultiSig_Transaction_Build extends CustomJavaAction<java.lang.String>
 {
@@ -50,42 +46,74 @@ public class JA_MultiSig_Transaction_Build extends CustomJavaAction<java.lang.St
 	public java.lang.String executeAction() throws Exception
 	{
 		// BEGIN USER CODE
-		Utils utils = new Utils(this.Transaction.getTransactionNP_Policy().getCardanonetwork().toString().toLowerCase());
-		NativeScript nativeScript = NativeScript.deserializeJson(this.Transaction.getTransactionNP_Policy().getScriptJSON());
-		
-		List<IMendixObject> recipients = Core.retrieveByPath(getContext(), this.Transaction.getMendixObject(), cardanowallet.proxies.RecipientNP.MemberNames.RecipientNP_TransactionNP.toString());
-        
-		List<Output> outputs = new ArrayList<Output>(); 
-		
-		for (IMendixObject obj : recipients) {
-            RecipientNP recipient = RecipientNP.initialize(this.getContext(), obj);
-			Output output = Output.builder()
-	                .address(recipient.getAddress())
-	                .assetName(LOVELACE)
-	                .qty(BigInteger.valueOf(recipient.getAmountInLong())).build();
-			outputs.add(output);
-		}
-		
-		TxOutputBuilder outputBuilder = outputs.get(0).outputBuilder();
-		for (int i = 1; i < outputs.size(); i++) {
-		    outputBuilder = outputBuilder.and(outputs.get(i).outputBuilder());
-		}
-		
-		String scriptAddress = this.Transaction.getTransactionNP_Policy().getAddress();
-		
-		TxBuilder txBuilder = outputBuilder
-			    .buildInputs(InputBuilders.createFromSender(scriptAddress, scriptAddress))
-			    .andThen((context, transaction) -> {
-			        // Add your script manually for now
-			        transaction.getWitnessSet().getNativeScripts().add(nativeScript);
-			    })
-			    .andThen(BalanceTxBuilders.balanceTx(scriptAddress, this.Transaction.getTransactionNP_Policy().getWitnessCount()));		
+	    Utils utils = new Utils(this.Transaction.getTransactionNP_Policy()
+                .getCardanonetwork()
+                .toString()
+                .toLowerCase());
 
-		        
+        // NativeScript from the JSON policy script
+        NativeScript nativeScript = NativeScript.deserializeJson(
+            this.Transaction.getTransactionNP_Policy().getScriptJSON()
+        );
+
+        // 2. Prepare the QuickTxBuilder. You need a valid TransactionProcessor instance.
+        //    If your `utils` class does not provide one, you'll need to create your own or
+        //    fetch it from wherever the code sets up the bloxbean backend.
+        //    For example, if you have:
+        //      TransactionProcessor transactionProcessor = 
+        //          new DefaultTransactionProcessor(utils.getTransactionService());
+        //    then do:
+		BFBackendService backendService =
+				new BFBackendService(utils.getBlockfrostUrl(), cardanowallet.proxies.constants.Constants.getBLOCKFROST_PROJECTID());
+
+        QuickTxBuilder quickTxBuilder = new QuickTxBuilder(backendService);
+
+        // 3. Create a script transaction, specifying the script address as the "sender"
+        //    for balancing purposes. In native multi-sig, the script address can hold UTxOs,
+        //    and the transaction must pay fees from that script address if you are spending them.
+        String scriptAddress = this.Transaction.getTransactionNP_Policy().getAddress();
         
-        com.bloxbean.cardano.client.transaction.spec.Transaction transaction = TxBuilderContext.init(utils.utxoSupplier, utils.protocolParamsSupplier).build(txBuilder);
-        return transaction.serializeToHex(); //serialize the original transaction so witnesses can sign it independently.
-		
+        Tx multiSigTx = new Tx()
+        		.from(scriptAddress); // returns Tx, so you can chain if desired
+
+        // 5) Add recipients
+        List<IMendixObject> recipients = Core.retrieveByPath(
+            getContext(),
+            this.Transaction.getMendixObject(),
+            RecipientNP.MemberNames.RecipientNP_TransactionNP.toString()
+        );
+
+        for (IMendixObject obj : recipients) {
+            RecipientNP recipient = RecipientNP.initialize(getContext(), obj);
+            multiSigTx.payToAddress(
+                recipient.getAddress(),
+                Amount.lovelace(BigInteger.valueOf(recipient.getAmountInLong()))
+            );
+        }
+
+        // 6) Let’s account for how many signers you expect
+        int witnessCount = this.Transaction
+                .getTransactionNP_Policy()
+                .getWitnessCount();
+
+        // 7) Compose + attach the native script with a "preBalanceTx" lambda.
+        //    That way, the library knows about the script in time for balancing.
+        com.bloxbean.cardano.client.transaction.spec.Transaction unsignedTx = quickTxBuilder
+            .compose(multiSigTx)
+            .feePayer(scriptAddress)           // if same as ".from(...)" 
+            .additionalSignersCount(witnessCount)
+            .preBalanceTx((context, txn) -> {
+                // Ensure the list is non-null, then add your native script
+                if (txn.getWitnessSet().getNativeScripts() == null) {
+                    txn.getWitnessSet().setNativeScripts(new ArrayList<>());
+                }
+                txn.getWitnessSet().getNativeScripts().add(nativeScript);
+            })
+            .build(); // build an unsigned transaction
+
+        // 8) Serialize to hex CBOR for external signing
+        return unsignedTx.serializeToHex();		
+        
 		// END USER CODE
 	}
 
@@ -101,6 +129,5 @@ public class JA_MultiSig_Transaction_Build extends CustomJavaAction<java.lang.St
 
 	// BEGIN EXTRA CODE
 	public static ILogNode LOG = Core.getLogger("LandanoTest");
-
 	// END EXTRA CODE
 }
