@@ -27818,12 +27818,28 @@ input[type=checkbox].three-state-checkbox + .control-label {
   display: flex;
   justify-content: center;
 }
+.wizard-body .card {
+  min-width: 700px;
+}
 .wizard-body .mx-dataview {
-  width: 600px;
+  width: 100%;
+}
+
+.listview-card ul li:hover .card {
+  background-color: rgba(0, 153, 255, 0.1490196078) !important;
+}
+.listview-card .selected .card {
+  border-left: #0071BC 12px solid;
 }
 
 .mx-dataview {
   height: auto;
+}
+
+.tab-lined .nav-tabs {
+  border-top: 0;
+  border-right: 0;
+  border-left: 0;
 }
 
 /*# sourceMappingURL=theme.compiled.css.map */
