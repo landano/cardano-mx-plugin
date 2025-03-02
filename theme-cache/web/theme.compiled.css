@@ -27836,6 +27836,10 @@ input[type=checkbox].three-state-checkbox + .control-label {
   height: auto;
 }
 
+.mx-listview-empty {
+  display: none;
+}
+
 .tab-lined .nav-tabs {
   border-top: 0;
   border-right: 0;
