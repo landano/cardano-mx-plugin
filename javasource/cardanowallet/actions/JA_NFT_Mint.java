@@ -15,16 +15,21 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import com.bloxbean.cardano.client.account.Account;
+import com.bloxbean.cardano.client.api.model.Result;
 import com.bloxbean.cardano.client.backend.blockfrost.common.Constants;
 import com.bloxbean.cardano.client.backend.blockfrost.service.BFBackendService;
 import com.bloxbean.cardano.client.cip.cip25.NFT;
 import com.bloxbean.cardano.client.cip.cip25.NFTFile;
 import com.bloxbean.cardano.client.cip.cip25.NFTMetadata;
+import com.bloxbean.cardano.client.crypto.SecretKey;
+import com.bloxbean.cardano.client.crypto.bip32.key.HdPrivateKey;
+import com.bloxbean.cardano.client.function.helper.SignerProviders;
 import com.bloxbean.cardano.client.metadata.cbor.CBORMetadataList;
 import com.bloxbean.cardano.client.metadata.cbor.CBORMetadataMap;
 import com.bloxbean.cardano.client.quicktx.QuickTxBuilder;
 import com.bloxbean.cardano.client.quicktx.Tx;
 import com.bloxbean.cardano.client.transaction.spec.Asset;
+import com.bloxbean.cardano.client.transaction.spec.Policy;
 import com.bloxbean.cardano.client.transaction.spec.Transaction;
 import com.bloxbean.cardano.client.transaction.spec.script.NativeScript;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -34,10 +39,12 @@ import com.mendix.logging.ILogNode;
 import com.mendix.systemwideinterfaces.core.IContext;
 import com.mendix.systemwideinterfaces.core.IMendixObject;
 import com.mendix.webui.CustomJavaAction;
+import cardanowallet.EncryptDecryptMnemonic;
 import cardanowallet.Utils;
 import cardanowallet.proxies.NFTFileNP;
 import cardanowallet.proxies.NFTNP;
 import cardanowallet.proxies.RecipientNP;
+import cardanowallet.proxies.Wallet;
 import co.nstant.in.cbor.model.UnicodeString;
 
 public class JA_NFT_Mint extends CustomJavaAction<java.lang.String>
@@ -46,15 +53,18 @@ public class JA_NFT_Mint extends CustomJavaAction<java.lang.String>
 	@java.lang.Deprecated(forRemoval = true)
 	private final IMendixObject __TransactionNP;
 	private final cardanowallet.proxies.TransactionNP TransactionNP;
+	private final java.lang.String Passphrase;
 
 	public JA_NFT_Mint(
 		IContext context,
-		IMendixObject _transactionNP
+		IMendixObject _transactionNP,
+		java.lang.String _passphrase
 	)
 	{
 		super(context);
 		this.__TransactionNP = _transactionNP;
 		this.TransactionNP = _transactionNP == null ? null : cardanowallet.proxies.TransactionNP.initialize(getContext(), _transactionNP);
+		this.Passphrase = _passphrase;
 	}
 
 	@java.lang.Override
@@ -67,15 +77,27 @@ public class JA_NFT_Mint extends CustomJavaAction<java.lang.String>
                 .toLowerCase());
 	    
 		String bfProjectId = cardanowallet.proxies.constants.Constants.getBLOCKFROST_PROJECTID();
-        BFBackendService backendService = new BFBackendService(this.blockfrostUrl, bfProjectId);
+        BFBackendService backendService = new BFBackendService(utils.getBlockfrostUrl(), bfProjectId);
+
+        // Prepare the sender wallet
+	    Wallet wallet = TransactionNP.getTransactionNP_Wallet();        
+        String mnemonic = EncryptDecryptMnemonic.decrypt(wallet.getMnemonicEncrypted(), this.Passphrase);
+		Account senderAccount = new Account(utils.getCardanoNetwork(), mnemonic);
+		mnemonic = null;
+		String senderAddress = senderAccount.baseAddress();
 
         // NativeScript from the JSON policy script
         NativeScript nativeScript = NativeScript.deserializeJson(
             TransactionNP.getTransactionNP_Policy().getScriptJSON()
         );
-        String scriptAddress = this.TransactionNP.getTransactionNP_Policy().getAddress();
+        HdPrivateKey hdPrivateKey = senderAccount.hdKeyPair().getPrivateKey();
+        SecretKey secretKey = SecretKey.create(hdPrivateKey.getKeyData());
+        Policy policy = new Policy(nativeScript)
+        		.addKey(secretKey);
+        // String scriptAddress = this.TransactionNP.getTransactionNP_Policy().getAddress();
 
         
+        // Build the NFT meta data
         NFTNP nftNP = TransactionNP.getTransactionNP_NFTNP();
         
         Asset asset = new Asset(nftNP.getName(), BigInteger.valueOf(1));
@@ -118,30 +140,32 @@ public class JA_NFT_Mint extends CustomJavaAction<java.lang.String>
 
 		RecipientNP recipient = TransactionNP.getTransactionNP_RecipientNP_Single();
 		
+		
+		// Build the transaction
         Tx tx = new Tx()
-                .mintAssets(nativeScript, asset, recipient.getAddress())
+                .mintAssets(nativeScript, asset, senderAddress)
                 .attachMetadata(nftMetadata)
-                .from(scriptAddress);
+                .from(senderAddress);        
         
-        int witnessCount = this.TransactionNP
-                .getTransactionNP_Policy()
-                .getWitnessCount();
-        
+        // Compose, sign and submit the transaction
         QuickTxBuilder quickTxBuilder = new QuickTxBuilder(backendService);
-        Transaction unsignedTx = quickTxBuilder
+        Result<String> signedTx = quickTxBuilder
                 .compose(tx)
-                .feePayer(scriptAddress)           // if same as ".from(...)" 
-                .additionalSignersCount(witnessCount)
+                .feePayer(senderAddress)
+                .withSigner(SignerProviders.signerFrom(senderAccount)) // Sign with sender's private key
+                .withSigner(SignerProviders.signerFrom(policy)) // Sign with policy key
                 .preBalanceTx((context, txn) -> {
-                    // Ensure the list is non-null, then add your native script
-                    if (txn.getWitnessSet().getNativeScripts() == null) {
-                        txn.getWitnessSet().setNativeScripts(new ArrayList<>());
-                    }
-                    txn.getWitnessSet().getNativeScripts().add(nativeScript);
+                    txn.getWitnessSet().getNativeScripts().add(nativeScript); // Explicitly add the script witness
                 })
-                .build(); // build an unsigned transaction
-        return unsignedTx.serializeToHex();		
-                	
+                .completeAndWait(LOG::debug);
+		
+        if (signedTx.isSuccessful()) {
+            LOG.debug("NFT Minting Transaction Submitted: " + signedTx.getValue());
+            return signedTx.getValue();
+        } else {
+            LOG.error("NFT Minting Failed: " + signedTx.getResponse());
+            throw new Exception("NFT Minting Failed: " + signedTx.getResponse());
+        }                	
 		// END USER CODE
 	}
 
@@ -156,13 +180,11 @@ public class JA_NFT_Mint extends CustomJavaAction<java.lang.String>
 	}
 
 	// BEGIN EXTRA CODE
-    private String blockfrostUrl = Constants.BLOCKFROST_MAINNET_URL;
-	private Account sender;
-    public static ILogNode LOG = Core.getLogger("LandanoTest - NFT Creation");
+    public static ILogNode LOG = Core.getLogger(cardanowallet.proxies.constants.Constants.getLogNodeName());
     
     public static NFT generateNFTMetadata(NFT nft, Map<String, Object> properties) {
-    	LOG.info("NFT Map::::::");
-    	LOG.info(nft.getMap());
+    	LOG.debug("NFT Map::::::");
+    	LOG.debug(nft.getMap());
     	
         
         for (Map.Entry<String, Object> entry : properties.entrySet()) {
