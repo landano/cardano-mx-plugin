@@ -15,18 +15,16 @@ import com.bloxbean.cardano.client.account.Account;
 import com.bloxbean.cardano.client.api.model.Amount;
 import com.bloxbean.cardano.client.api.model.Result;
 import com.bloxbean.cardano.client.backend.blockfrost.service.BFBackendService;
-import com.bloxbean.cardano.client.cip.cip20.MessageMetadata;
 import com.bloxbean.cardano.client.function.helper.SignerProviders;
-import com.bloxbean.cardano.client.metadata.cbor.CBORMetadataList;
 import com.bloxbean.cardano.client.quicktx.QuickTxBuilder;
 import com.bloxbean.cardano.client.quicktx.Tx;
-import com.bloxbean.cardano.client.transaction.spec.Transaction;
 import com.mendix.core.Core;
 import com.mendix.logging.ILogNode;
 import com.mendix.systemwideinterfaces.core.IContext;
 import com.mendix.systemwideinterfaces.core.IMendixObject;
 import com.mendix.webui.CustomJavaAction;
 import cardanowallet.EncryptDecryptMnemonic;
+import cardanowallet.MetadataUtils;
 import cardanowallet.Utils;
 import cardanowallet.proxies.RecipientNP;
 import cardanowallet.proxies.RecipientTokenNP;
@@ -113,8 +111,7 @@ public class JA_Simple_TransactionBuildSignSubmit extends CustomJavaAction<java.
 		// Add the meta data
         String messageMetaData = TransactionNP.getMessageMetaData();
         if (messageMetaData != null && !messageMetaData.isEmpty()){
-        	CBORMetadataList cbormeta = new CBORMetadataList().add(messageMetaData);
-        	tx.attachMetadata(MessageMetadata.create().add(messageMetaData));
+            tx.attachMetadata(MetadataUtils.createMessageMetadata(messageMetaData));
         }
 		Result<String> signedTx = quickTxBuilder
 	            .compose(tx)
