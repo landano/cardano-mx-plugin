@@ -109,7 +109,7 @@ public class JA_Simple_TransactionBuildSignSubmit extends CustomJavaAction<java.
 		
 		
 		// Add the meta data
-        String messageMetaData = TransactionNP.getMessageMetaData();
+        String messageMetaData = TransactionNP.getMessageMetadata();
         if (messageMetaData != null && !messageMetaData.isEmpty()){
             tx.attachMetadata(MetadataUtils.createMessageMetadata(messageMetaData));
         }
