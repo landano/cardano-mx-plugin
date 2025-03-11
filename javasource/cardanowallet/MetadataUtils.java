@@ -21,7 +21,7 @@ public class MetadataUtils {
     
     public static MessageMetadata createMessageMetadata(String longMetadata) {
     	// Split the long metadata into chunks of 64 characters
-    	List<String> metadataChunks = MetadataUtils.splitMetadata(longMetadata, 64);
+    	List<String> metadataChunks = MetadataUtils.splitMetadata(longMetadata, 60);
     	
     	// Create metadata and add chunks
     	MessageMetadata metadata = MessageMetadata.create();

@@ -117,9 +117,13 @@ public class JA_Simple_TransactionBuildSignSubmit extends CustomJavaAction<java.
 	            .compose(tx)
                 .feePayer(senderAddress)
 	            .withSigner(SignerProviders.signerFrom(senderAccount))
-                .completeAndWait(LOG::debug);
-		
+                .completeAndWait(Utils.LOG::debug);
+		if(!signedTx.isSuccessful()) {
+			Utils.LOG.error(signedTx);
+		}
 		return signedTx.getValue();
+		
+
 		// END USER CODE
 	}
 
@@ -134,6 +138,5 @@ public class JA_Simple_TransactionBuildSignSubmit extends CustomJavaAction<java.
 	}
 
 	// BEGIN EXTRA CODE
-	public static ILogNode LOG = Core.getLogger(cardanowallet.proxies.constants.Constants.getLogNodeName());
 	// END EXTRA CODE
 }
