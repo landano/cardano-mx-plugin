@@ -61,13 +61,13 @@ public class JA_MultiSig_Transaction_Sign extends CustomJavaAction<java.lang.Boo
 			Account signingAccount = new Account(utils.getCardanoNetwork(), mnemonic);
 			Transaction transaction = Transaction.deserialize(HexUtil.decodeHexString(this.TransactionSigning.getUnsignedCBOR()));
 
-			LOG.debug("transactio deserialized");
-			LOG.debug(transaction);
+			Utils.LOG.debug("transactio deserialized");
+			Utils.LOG.debug(transaction);
 			Transaction witnessSignedTransaction = signingAccount.sign(transaction);
 			this.TransactionSigning.setSignedCBOR(witnessSignedTransaction.serializeToHex()); //serialize the original transaction so witnesses can sign it independently.
 		} catch (Exception e) {
-			LOG.error("Error in JA_MultiSig_Txn_Witness_Signing");
-			LOG.error(e);
+			Utils.LOG.error("Error in JA_MultiSig_Txn_Witness_Signing");
+			Utils.LOG.error(e);
 			return false;
 		}
 		
@@ -86,6 +86,5 @@ public class JA_MultiSig_Transaction_Sign extends CustomJavaAction<java.lang.Boo
 	}
 
 	// BEGIN EXTRA CODE
-	public static ILogNode LOG = Core.getLogger("LandanoTest");
 	// END EXTRA CODE
 }

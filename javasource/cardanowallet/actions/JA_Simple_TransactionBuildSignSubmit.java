@@ -30,6 +30,7 @@ import cardanowallet.proxies.RecipientNP;
 import cardanowallet.proxies.RecipientTokenNP;
 import cardanowallet.proxies.Wallet;
 import cardanowallet.proxies.Asset;
+import system.proxies.Error;
 
 public class JA_Simple_TransactionBuildSignSubmit extends CustomJavaAction<java.lang.String>
 {
@@ -113,14 +114,28 @@ public class JA_Simple_TransactionBuildSignSubmit extends CustomJavaAction<java.
         if (messageMetaData != null && !messageMetaData.isEmpty()){
             tx.attachMetadata(MetadataUtils.createMessageMetadata(messageMetaData));
         }
-		Result<String> signedTx = quickTxBuilder
-	            .compose(tx)
-                .feePayer(senderAddress)
-	            .withSigner(SignerProviders.signerFrom(senderAccount))
-                .completeAndWait(Utils.LOG::debug);
-		if(!signedTx.isSuccessful()) {
-			Utils.LOG.error(signedTx);
-		}
+        String errorResponse = "Error: \n";
+        Result<String> signedTx = null;
+        try {
+			signedTx = quickTxBuilder
+		            .compose(tx)
+	                .feePayer(senderAddress)
+		            .withSigner(SignerProviders.signerFrom(senderAccount))
+	                .completeAndWait(Utils.LOG::debug);
+			if(!signedTx.isSuccessful()) {
+				Utils.LOG.error(signedTx);
+				if(signedTx.getResponse().contains("MaxTxSizeUTxO")) {
+					errorResponse = errorResponse + "Transaction size is big\r\n"
+							+ "hint:reduce metadata, reduce number of recipients, etc\n\n";
+				}
+				if(signedTx.getResponse().contains("javax.crypto.BadPaddingException")) {
+					errorResponse = errorResponse + " Invalid Passphrase\n\n";
+				}
+				throw new Exception(errorResponse);
+			}
+        } catch(Exception ex) {
+        	throw new Exception(ex.getMessage());
+        }
 		return signedTx.getValue();
 		
 
