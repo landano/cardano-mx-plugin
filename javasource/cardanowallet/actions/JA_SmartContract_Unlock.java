@@ -13,7 +13,6 @@ import java.util.List;
 import java.util.Optional;
 import com.bloxbean.cardano.client.account.Account;
 import com.bloxbean.cardano.client.address.AddressProvider;
-import com.bloxbean.cardano.client.api.exception.ApiException;
 import com.bloxbean.cardano.client.api.model.Amount;
 import com.bloxbean.cardano.client.api.model.Result;
 import com.bloxbean.cardano.client.api.model.Utxo;
@@ -40,6 +39,8 @@ import com.mendix.logging.ILogNode;
 import com.mendix.systemwideinterfaces.core.IContext;
 import com.mendix.systemwideinterfaces.core.IMendixObject;
 import com.mendix.webui.CustomJavaAction;
+import cardanowallet.EncryptDecryptMnemonic;
+import cardanowallet.Utils;
 
 public class JA_SmartContract_Unlock extends CustomJavaAction<IMendixObject>
 {
@@ -52,11 +53,11 @@ public class JA_SmartContract_Unlock extends CustomJavaAction<IMendixObject>
 	private final IMendixObject __ContractScript;
 	private final cardanowallet.proxies.Script ContractScript;
 	private final java.math.BigDecimal ContractAmount;
-	/** @deprecated use SenderWallet.getMendixObject() instead. */
+	/** @deprecated use SignerWallet.getMendixObject() instead. */
 	@java.lang.Deprecated(forRemoval = true)
-	private final IMendixObject __SenderWallet;
-	private final cardanowallet.proxies.Wallet SenderWallet;
-	private final java.lang.String SignerMnemonic;
+	private final IMendixObject __SignerWallet;
+	private final cardanowallet.proxies.Wallet SignerWallet;
+	private final java.lang.String SignerWalletPassphrase;
 
 	public JA_SmartContract_Unlock(
 		IContext context,
@@ -66,8 +67,8 @@ public class JA_SmartContract_Unlock extends CustomJavaAction<IMendixObject>
 		java.lang.String _redeemerGuess,
 		IMendixObject _contractScript,
 		java.math.BigDecimal _contractAmount,
-		IMendixObject _senderWallet,
-		java.lang.String _signerMnemonic
+		IMendixObject _signerWallet,
+		java.lang.String _signerWalletPassphrase
 	)
 	{
 		super(context);
@@ -78,20 +79,21 @@ public class JA_SmartContract_Unlock extends CustomJavaAction<IMendixObject>
 		this.__ContractScript = _contractScript;
 		this.ContractScript = _contractScript == null ? null : cardanowallet.proxies.Script.initialize(getContext(), _contractScript);
 		this.ContractAmount = _contractAmount;
-		this.__SenderWallet = _senderWallet;
-		this.SenderWallet = _senderWallet == null ? null : cardanowallet.proxies.Wallet.initialize(getContext(), _senderWallet);
-		this.SignerMnemonic = _signerMnemonic;
+		this.__SignerWallet = _signerWallet;
+		this.SignerWallet = _signerWallet == null ? null : cardanowallet.proxies.Wallet.initialize(getContext(), _signerWallet);
+		this.SignerWalletPassphrase = _signerWalletPassphrase;
 	}
 
 	@java.lang.Override
 	public IMendixObject executeAction() throws Exception
 	{
 		// BEGIN USER CODE
+		Utils utils = new Utils(this.SignerWallet.getCardanonetwork()
+				.toString()
+				.toLowerCase());
+		selectedNetwork = utils.getCardanoNetwork();
 		blockfrostProjectID = cardanowallet.proxies.constants.Constants.getBLOCKFROST_PROJECTID();
-		receiver = this.ReceiverAddress;
-		compiledCode = this.PlutusScriptCode;
-		assignBlockfrostNetwork(CardanoNetwork.name());
-		backendService = new BFBackendService(blockfrostUrl, blockfrostProjectID);
+		backendService = new BFBackendService(utils.getBlockfrostUrl(), blockfrostProjectID);
 		transactionService = backendService.getTransactionService();
 		
 		this.unlock();
@@ -110,40 +112,44 @@ public class JA_SmartContract_Unlock extends CustomJavaAction<IMendixObject>
 	}
 
 	// BEGIN EXTRA CODE
-	public static ILogNode LOG = Core.getLogger("LandanoTest");
+	
+	public static ILogNode LOG = Utils.LOG;
 	private Network selectedNetwork;
-	private String blockfrostUrl;
 	private String blockfrostProjectID = cardanowallet.proxies.constants.Constants.getBLOCKFROST_PROJECTID();
 	
-	private Account sender;
-	private String receiver; // = this.ReceiverAddress;// "addr_test1qq5zpspqs6m7mzxq808avasa5tseuhewvcv46px7ap8afzz28vgl6r803aayrz2lapzgevpyy55sj27gc0ncwhkqydlq5m0v5k";
-	private String compiledCode; // = this.PlutusScriptCode; //"59019401010032323232323232323225333003323232323253330083370e900118051baa001132323253333330120051533300b3370e900018069baa005132533301000100b132533333301400100c00c00c00c132533301230140031533300e3370e900018081baa004132533300f3371e6eb8c050c048dd5004a450d48656c6c6f2c20576f726c642100100114a06644646600200200644a66602c00229404c94ccc04ccdc79bae301800200414a226600600600260300026eb0c04cc050c050c050c050c050c050c050c050c044dd50051bae301330113754602660226ea801054cc03d24012465787065637420536f6d6528446174756d207b206f776e6572207d29203d20646174756d001600d375c0026022002601c6ea8014028028028028028c03cc040008c038004c02cdd50008b1806180680118058009805801180480098031baa001149854cc0112411856616c696461746f722072657475726e65642066616c73650013656153300249011272656465656d65723a2052656465656d657200165734ae7155ceaab9e5573eae855d12ba41";
-	    //Blockfrost
+	private Account signer;
 	private BackendService backendService; // = new BFBackendService(blockfrostUrl, blockfrostProjectID);
 	private TransactionService transactionService;
 	
 	private PlutusScript plutusScript; // = PlutusBlueprintUtil.getPlutusScriptFromCompiledCode(compiledCode, PlutusVersion.v3);
 	private String scriptAddr; // = AddressProvider.getEntAddress(plutusScript, Networks.testnet()).toBech32();
 
-    public String unlock() throws ApiException {
+    public String unlock() throws Exception {
     	var resultString = "";
     	try {
+    		var decrypt = new EncryptDecryptMnemonic();
+        	try {
+    			String mnemonic = decrypt.decrypt(this.SignerWallet.getMnemonicEncrypted(), this.SignerWalletPassphrase);
+        		signer = new Account(selectedNetwork, mnemonic);
+    		} catch (Exception e) {
+    			// TODO Auto-generated catch block
+    			LOG.error("Error signing unlock transaction", e);
+    			throw e;
+    		}
+        	
 	    	plutusScript = PlutusBlueprintUtil.getPlutusScriptFromCompiledCode(this.ContractScript.getPlutusScriptCode(), PlutusVersion.v3);
-	    	LOG.info("plutus:::" + plutusScript);
+	    	LOG.debug("plutus:::" + plutusScript);
 	    	scriptAddr = AddressProvider.getEntAddress(plutusScript, selectedNetwork).toBech32();
-	    	LOG.info("scriptAddr:::" + scriptAddr);
-	    	LOG.info("Script Address from ContractStript:::"+this.ContractScript.getScriptAddress());
-	    	//the signer mnemonic is for the receiver, so we'll ignore 'this.ReceiverAddress'
-	    	Account signer = new Account(selectedNetwork, this.SignerMnemonic);
-	    	receiver = signer.baseAddress();
+	    	LOG.debug("scriptAddr:::" + scriptAddr);
+	    	LOG.debug("Script Address from ContractStript:::"+this.ContractScript.getScriptAddress());
 	    	
 	        Utxo scriptUtxo = null;
 	        Optional<Utxo> UtxoO = checkIfUtxoAvailable2(this.ContractScript.getLockTransactionHash(), scriptAddr); //.orElseThrow();
 	        if(UtxoO.isPresent()) {
 	            scriptUtxo = UtxoO.get();
-	            System.out.println("Utxo is present:::" + scriptUtxo.toString());
+	            LOG.debug("Utxo is present:::" + scriptUtxo.toString());
 	        } else {
-	            System.out.println("Utxo is not present::::NULL"); //checkIfUtxoAvailable2(contractTxHash, scrtiptAddr).isPresent(); //ScriptUtxoFinders.findFirstByInlineDatum(utxoSupplier, scrtiptAddr, datum).orElseThrow();
+	            LOG.debug("Utxo is not present::::NULL"); //checkIfUtxoAvailable2(contractTxHash, scrtiptAddr).isPresent(); //ScriptUtxoFinders.findFirstByInlineDatum(utxoSupplier, scrtiptAddr, datum).orElseThrow();
 	        }
 	        PlutusData redeemer = ConstrPlutusData.of(0, BytesPlutusData.of(this.RedeemerGuess));
 	        ScriptTx scriptTx = new ScriptTx()
@@ -151,50 +157,29 @@ public class JA_SmartContract_Unlock extends CustomJavaAction<IMendixObject>
 	                .payToAddress(signer.baseAddress(), Amount.ada(this.ContractAmount.doubleValue()))
 	                .attachSpendingValidator(plutusScript);
 	
-	
 	        QuickTxBuilder quickTxBuilder = new QuickTxBuilder(backendService);
 	        Result<String> result = quickTxBuilder.compose(scriptTx)
 	                .feePayer(signer.baseAddress())
 	                .withSigner(SignerProviders.signerFrom(signer))
 	                .withRequiredSigners(signer.getBaseAddress())
-	                .completeAndWait(System.out::println);
+	                .completeAndWait(LOG::debug);
 
 	        
-			System.out.println(result);  
-			LOG.info("=====RESULT======");
-			LOG.info(result);
-			if(result.isSuccessful()) {
-				this.ContractScript.setUnLockTransactionHash(result.toString());
+			LOG.debug(result);  
+			LOG.debug("=====RESULT======");
+			LOG.debug(result);
+			if(!result.isSuccessful()) {
+				throw new Exception("Error: Failed Smart contract redemption:::"+ result.getResponse());
 			}
-			LOG.info("=====SMART CONTRACT REDEMPTION DONE======");
-			resultString = result.toString();
+			this.ContractScript.setUnLockTransactionHash(result.getValue());
+			LOG.debug("=====SMART CONTRACT REDEMPTION DONE======");
+			resultString = result.getValue();
 		} catch (Exception e) {
-			 e.printStackTrace();
-			 System.out.println(e);
 			 LOG.error(e);
+			 throw e;
 		}
     	return resultString;
     }
- 	
-    
-
-	private void assignBlockfrostNetwork(String networkString) {
-		if(networkString.equalsIgnoreCase("preprod")) {
-			selectedNetwork = Networks.preprod();
-			blockfrostUrl = Constants.BLOCKFROST_PREPROD_URL;
-		} else if(networkString.equalsIgnoreCase("testnet")) {
-			selectedNetwork = Networks.testnet();
-			blockfrostUrl = Constants.BLOCKFROST_TESTNET_URL;
-		} else if(networkString.equalsIgnoreCase("preview")) {
-			blockfrostUrl = Constants.BLOCKFROST_PREVIEW_URL;
-			selectedNetwork = Networks.preview();
-		} else {
-			selectedNetwork = Networks.mainnet();
-			blockfrostUrl = Constants.BLOCKFROST_MAINNET_URL;
-		}
-		selectedNetwork = Networks.preprod();
-		blockfrostUrl = Constants.BLOCKFROST_PREPROD_URL;
-	}
     
 	public void waitForTransaction(Result<String> result) {
 		try {
@@ -203,10 +188,10 @@ public class JA_SmartContract_Unlock extends CustomJavaAction<IMendixObject>
 				while (count < 60) {
 					Result<TransactionContent> txnResult = transactionService.getTransaction(result.getValue());
 					if (txnResult.isSuccessful()) {
-						System.out.println(JsonUtil.getPrettyJson(txnResult.getValue()));
+						LOG.debug(JsonUtil.getPrettyJson(txnResult.getValue()));
 						break;
 					} else {
-						System.out.println("Waiting for transaction to be mined ....");
+						LOG.debug("Waiting for transaction to be mined ....");
 					}
 					count++;
 					Thread.sleep(2000);
@@ -227,9 +212,9 @@ public class JA_SmartContract_Unlock extends CustomJavaAction<IMendixObject>
             utxo = utxos.stream().filter(u -> u.getTxHash().equals(txHash))
                     .findFirst();
             if(utxo.isPresent()) {
-                System.out.println("Output got is::::"+String.valueOf(count) +" :::::::: " + utxo.get().toString());
+                LOG.debug("Output got is::::"+String.valueOf(count) +" :::::::: " + utxo.get().toString());
             } else {
-            	System.out.println("Try to get new output... txhash: " + txHash);
+            	LOG.debug("Try to get new output... txhash: " + txHash);
             }
 
             try {
@@ -248,7 +233,7 @@ public class JA_SmartContract_Unlock extends CustomJavaAction<IMendixObject>
             List<Utxo> utxos = new DefaultUtxoSupplier(backendService.getUtxoService()).getAll(address);
             utxo = utxos.stream().filter(u -> u.getTxHash().equals(txHash))
                     .findFirst();
-            System.out.println("Try to get new output... txhash: " + txHash);
+            LOG.debug("Try to get new output... txhash: " + txHash);
             try {
                 Thread.sleep(1000);
             } catch (Exception e) {}

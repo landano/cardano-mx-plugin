@@ -134,7 +134,7 @@ public class JA_Simple_TransactionBuildSignSubmit extends CustomJavaAction<java.
 				throw new Exception(errorResponse);
 			}
         } catch(Exception ex) {
-        	throw new Exception(ex.getMessage());
+        	throw ex;
         }
 		return signedTx.getValue();
 		

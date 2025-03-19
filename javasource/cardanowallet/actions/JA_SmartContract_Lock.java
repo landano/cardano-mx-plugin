@@ -44,6 +44,7 @@ import com.mendix.logging.ILogNode;
 import com.mendix.systemwideinterfaces.core.IContext;
 import com.mendix.systemwideinterfaces.core.IMendixObject;
 import com.mendix.webui.CustomJavaAction;
+import cardanowallet.EncryptDecryptMnemonic;
 
 public class JA_SmartContract_Lock extends CustomJavaAction<IMendixObject>
 {
@@ -124,6 +125,7 @@ public class JA_SmartContract_Lock extends CustomJavaAction<IMendixObject>
 	 private String scriptAddr;
 	
     public String lock() {
+    	/*
 		Map<String, Object> params = new HashMap<String, Object>();
         params.put("value", this.SenderWallet.getMnemonicEncrypted()); // Adjust parameter names as needed
         params.put("key", encryption.proxies.constants.Constants.getEncryptionKey() + this.SenderPassPhrase); // Adjust parameter names as needed
@@ -133,10 +135,12 @@ public class JA_SmartContract_Lock extends CustomJavaAction<IMendixObject>
         String mnemonic = (String) Core.userActionCall("Encryption.DecryptString")
         		.withParams(this.getContext(), params)
         		.execute(this.getContext());
-
+        */
+    	var decrypt = new EncryptDecryptMnemonic();
     	try {
     		// optionally we should allow users to input their mnemonics directly in the UI instead of even saving them on our servers.
-    		sender = new Account(selectedNetwork, mnemonic);
+			String mnemonic = decrypt.decrypt(this.SenderWallet.getMnemonicEncrypted(), this.SenderPassPhrase);
+			sender = new Account(selectedNetwork, mnemonic);
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
