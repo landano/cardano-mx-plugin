@@ -25,33 +25,46 @@ import com.bloxbean.cardano.client.function.helper.AuxDataProviders;
 import com.bloxbean.cardano.client.function.helper.BalanceTxBuilders;
 import com.bloxbean.cardano.client.function.helper.InputBuilders;
 import com.bloxbean.cardano.client.function.helper.SignerProviders;
+import com.bloxbean.cardano.client.metadata.Metadata;
+import com.bloxbean.cardano.client.metadata.cbor.CBORMetadata;
+import com.bloxbean.cardano.client.metadata.cbor.CBORMetadataList;
 import com.bloxbean.cardano.client.transaction.spec.Transaction;
 import com.mendix.systemwideinterfaces.core.IContext;
 import com.mendix.webui.CustomJavaAction;
+import cardanowallet.EncryptDecryptMnemonic;
+import cardanowallet.MetadataUtils;
 import static com.bloxbean.cardano.client.common.CardanoConstants.LOVELACE;
+import java.math.BigInteger;
 import static com.bloxbean.cardano.client.common.ADAConversionUtil.adaToLovelace;
 import com.mendix.core.Core;
 import com.mendix.logging.ILogNode;
-import cardanowallet.EncryptDecryptMnemonic;
 
 public class JA_CardanoTransaction extends CustomJavaAction<java.lang.String>
 {
-	private java.lang.String ReceiverAddress;
-	private java.math.BigDecimal Amount;
-	private cardanowallet.proxies.Enum_CardanoNetwork CardanoNetwork;
-	private java.lang.String EncryptedMnemonic;
-	private java.lang.String Passphrase;
-	private java.lang.String TransactionMetaData;
+	private final java.lang.String ReceiverAddress;
+	private final java.math.BigDecimal Amount;
+	private final cardanowallet.proxies.Enum_CardanoNetwork CardanoNetwork;
+	private final java.lang.String EncryptedMnemonic;
+	private final java.lang.String Passphrase;
+	private final java.lang.String TransactionMetaData;
 
-	public JA_CardanoTransaction(IContext context, java.lang.String ReceiverAddress, java.math.BigDecimal Amount, java.lang.String CardanoNetwork, java.lang.String EncryptedMnemonic, java.lang.String Passphrase, java.lang.String TransactionMetaData)
+	public JA_CardanoTransaction(
+		IContext context,
+		java.lang.String _receiverAddress,
+		java.math.BigDecimal _amount,
+		java.lang.String _cardanoNetwork,
+		java.lang.String _encryptedMnemonic,
+		java.lang.String _passphrase,
+		java.lang.String _transactionMetaData
+	)
 	{
 		super(context);
-		this.ReceiverAddress = ReceiverAddress;
-		this.Amount = Amount;
-		this.CardanoNetwork = CardanoNetwork == null ? null : cardanowallet.proxies.Enum_CardanoNetwork.valueOf(CardanoNetwork);
-		this.EncryptedMnemonic = EncryptedMnemonic;
-		this.Passphrase = Passphrase;
-		this.TransactionMetaData = TransactionMetaData;
+		this.ReceiverAddress = _receiverAddress;
+		this.Amount = _amount;
+		this.CardanoNetwork = _cardanoNetwork == null ? null : cardanowallet.proxies.Enum_CardanoNetwork.valueOf(_cardanoNetwork);
+		this.EncryptedMnemonic = _encryptedMnemonic;
+		this.Passphrase = _passphrase;
+		this.TransactionMetaData = _transactionMetaData;
 	}
 
 	@java.lang.Override
@@ -77,11 +90,9 @@ public class JA_CardanoTransaction extends CustomJavaAction<java.lang.String>
 		}
 
 		// Decrypt the mnemonic
-		EncryptDecryptMnemonic decryptMnemonic = new EncryptDecryptMnemonic();
-		String mnemonic = decryptMnemonic.decrypt(this.EncryptedMnemonic, this.Passphrase);
-
+		String mnemonic = EncryptDecryptMnemonic.decrypt(this.EncryptedMnemonic, this.Passphrase);
+		
 		Account senderAccount = new Account(selectedNetwork, mnemonic);
-		LOG.info(senderAccount);
 		String senderAddress = senderAccount.baseAddress();
 		
 		String receiverAddress1 = this.ReceiverAddress;
@@ -127,26 +138,6 @@ public class JA_CardanoTransaction extends CustomJavaAction<java.lang.String>
 	}
 
 	// BEGIN EXTRA CODE
-	public static ILogNode LOG = Core.getLogger("LandanoTest");
-	/*public void waitForTransaction(Result<String> result) {
-		try {
-			if (result.isSuccessful()) { //Wait for transaction to be mined
-				int count = 0;
-				while (count < 60) {
-					Result<TransactionContent> txnResult = transactionService.getTransaction(result.getValue());
-					if (txnResult.isSuccessful()) {
-						System.out.println(JsonUtil.getPrettyJson(txnResult.getValue()));
-						break;
-					} else {
-						System.out.println("Waiting for transaction to be mined ....");
-					}
-					count++;
-					Thread.sleep(2000);
-				}
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}*/
+	public static ILogNode LOG = Core.getLogger(cardanowallet.proxies.constants.Constants.getLogNodeName());
 	// END EXTRA CODE
 }

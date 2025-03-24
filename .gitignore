@@ -19,3 +19,8 @@
 /cardano mendix plug-in.mpr.bak
 /cardano mendix plug-in.mpr.lock
 /nativemobile/builds/
+<<<<<<< HEAD
+=======
+/bin/
+>>>>>>> origin/cmp-development
+/.svn/
