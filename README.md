@@ -13,10 +13,12 @@ The **Cardano Mendix Plugin** integrates the Cardano blockchain with the Mendix 
 - **Blockchain Data Access:** Retrieve information from the Cardano blockchain, such as block data, transaction history, and more.
 - **Adding Metadata to Transactions:** Attach metadata to transactions to include additional information that can be stored and retrieved from the blockchain.
 
-### Roadmap for September
+### Milestone 4 release
 - **Support for Multi-Sig Transactions:** Create and manage multi-signature transactions, ensuring that multiple parties authorize a transaction before it is processed.
-- **Creation of Native Tokens:** Mint and manage native tokens on the Cardano blockchain, enabling custom assets within your Mendix applications.
 - **Smart Contract Interaction:** Execute and interact with smart contracts on the Cardano blockchain.
+
+### Roadmap for April
+- **Creation of Native Tokens:** Mint and manage native tokens on the Cardano blockchain, enabling custom assets within your Mendix applications.
 
 ## Prerequisites
 
@@ -44,17 +46,27 @@ git clone https://github.com/yourusername/Cardano-Mendix-Plugin.git
    - Set up necessary credentials and access tokens.
 
 ## Usage
+### Create a wallet in the system
+You have two options. You can either restore an existing wallet using the mnemonic that you have safely stored previously or you can go ahead and create a wallet from scratch. For the lather you'll be presented with a fresh mnemonic phrase.
 
 ### Managing Transactions
+You can create a transaction by clicking the create transaction button in the transaction section of the wallet overview. You'll be presented by a 4 step workflow that will guide you through the process:
 
-1. **Create a Transaction:**
-   - Utilize the plugin to create a transaction object with the necessary parameters.
+1. **Type of transaction:**
+   - Simple
+   - Multi-sig
+   - Metadata
+   - NFT
+   - Smart Contract
 
-2. **Sign the Transaction:**
-   - Use your private key (stored securely) to sign the transaction within the Mendix environment.
+2. **Transaction details:**
+   - Fill in the necessary details of the transaction
 
-3. **Submit the Transaction:**
-   - Submit the signed transaction to the Cardano network and handle any returned transaction IDs or errors.
+3. **Verify the Transaction:**
+   - Verify the details entered in the previous step
+  
+4. **Confirm the Transaction:**
+   - Confirm the transaction with your passphrase 
 
 ## Contributing
 
