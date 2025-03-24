@@ -15,14 +15,18 @@ import cardanowallet.EncryptDecryptMnemonic;
 
 public class JA_DecryptMnemonic extends CustomJavaAction<java.lang.String>
 {
-	private java.lang.String EncryptedMnemonic;
-	private java.lang.String Passphrase;
+	private final java.lang.String EncryptedMnemonic;
+	private final java.lang.String Passphrase;
 
-	public JA_DecryptMnemonic(IContext context, java.lang.String EncryptedMnemonic, java.lang.String Passphrase)
+	public JA_DecryptMnemonic(
+		IContext context,
+		java.lang.String _encryptedMnemonic,
+		java.lang.String _passphrase
+	)
 	{
 		super(context);
-		this.EncryptedMnemonic = EncryptedMnemonic;
-		this.Passphrase = Passphrase;
+		this.EncryptedMnemonic = _encryptedMnemonic;
+		this.Passphrase = _passphrase;
 	}
 
 	@java.lang.Override

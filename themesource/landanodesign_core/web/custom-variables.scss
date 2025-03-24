@@ -1,3 +1,4 @@
+@import "../../atlas_core/web/_variables.scss";
 //
 // ██████╗  █████╗ ███████╗██╗ ██████╗
 // ██╔══██╗██╔══██╗██╔════╝██║██╔════╝
@@ -39,25 +40,31 @@ $border-color-default: #ced0d3;
 $border-radius-default: 4px;
 
 // Topbar
-$topbar-bg: #020557;
+$topbar-bg: #FFFFFF66;
 $topbar-minimalheight: 48px;
 $topbar-border-color: $border-color-default;
 
 // Sidebar
-$sidebar-bg: white;
+$sidebar-bg:#FFFFFF99;
+;
 
 // Topbar mobile
-$m-header-height: 45px;
+$m-header-height: 70px;
 $m-header-bg: $topbar-bg;
-$m-header-color: #fff;
+$m-header-color: $font-color-default;
 $m-header-title-size: 16px;
+
+// Bottombar mobile
+$navigation-bg: $topbar-bg;
+$navigation-bg-hover:#0099FF26;
+$navigation-bg-active: darken($navigation-bg-hover, 8);
 
 // Navbar Brand Name / For your company, product, or project name (used in layouts/base/)
 $navbar-brand-name: $brand-primary;
 
 // Background Colors
 // Backgrounds
-$bg-color: #f8f8f8;
+$bg-color: linear-gradient(120deg, #FAFDFF 5%, #E2F3FF 100%);
 $bg-color-secondary: #fff;
 
 // Default Link Color
@@ -77,10 +84,10 @@ $link-hover-color: darken($link-color, 15%);
 //## Change your font family, weight, line-height, headings and more (used in components/typography)
 
 // Font Family Import (Used for google font plugin in theme creater)
-$font-family-import: "https://fonts.googleapis.com/css2?family=Jost:ital,wght@0,100..900;1,100..900&display=swap";
+$font-family-import: "https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap";
 
 // Font Family / False = fallback from Bootstrap (Helvetica Neue)
-$font-family-base: "Jost", sans-serif;
+$font-family-base: "Manrope", sans-serif;
 
 // Font Sizes
 $font-size-large: 16px;
@@ -91,16 +98,16 @@ $font-size-super-small: 10px;
 // Font Weights
 $font-weight-light: 100;
 $font-weight-normal: normal;
-$font-weight-semibold: 600;
+$font-weight-semibold: 700;
 $font-weight-bold: bold;
 
 // Font Size Headers
-$font-size-h1: 32px;
-$font-size-h2: 28px;
-$font-size-h3: 26px;
-$font-size-h4: 22px;
-$font-size-h5: 20px;
-$font-size-h6: 18px;
+$font-size-h1: 29px;
+$font-size-h2: 25px;
+$font-size-h3: 20px;
+$font-size-h4: 17px;
+$font-size-h5: 14px;
+$font-size-h6: 12px;
 
 // Font Weight Headers
 $font-weight-header: $font-weight-semibold;
@@ -126,9 +133,9 @@ $navigation-font-size: 14px;
 $navigation-sub-font-size: $font-size-small;
 $navigation-glyph-size: 20px; // For glyphicons that you can select in the Mendix Modeler
 
-$navigation-color: #fff;
-$navigation-color-hover: #fff;
-$navigation-color-active: #fff;
+$navigation-color: $gray-darker;
+$navigation-color-hover: $gray-darker;
+$navigation-color-active: $gray-darker;
 
 $navigation-sub-color: #fff;
 $navigation-sub-color-hover: #fff;
