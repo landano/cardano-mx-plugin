@@ -12,14 +12,26 @@ import { Big } from "big.js";
 // END EXTRA CODE
 
 /**
- * @param {string} walletIdentifier
+ * @param {MxObject} wallet
  * @param {string} transactionData - CBOR-encoded transaction data
  * @returns {Promise.<string>}
  */
-export async function JS_SignCardanoWalletTransaction(walletIdentifier, transactionData) {
+export async function JS_SignCardanoWalletTransaction(wallet, transactionData) {
 	// BEGIN USER CODE
+    const walletIdentifier = wallet.get('_id');
+    if (!cardano || !cardano[walletIdentifier]) {
+        console.error('Wallet not found');
+        return false;
+    }
+
     try {
-		const cardanoWallet = await window.cardano[walletIdentifier].enable();
+        // Re-enable the wallet and retrieve the wallet API object
+        const cardanoWallet = await cardano[walletIdentifier].enable();
+        if (!cardanoWallet) {
+            throw new Error('Could not enable wallet');
+        }
+
+        console.info('Cardano Wallet enabled:', cardanoWallet);
 
         // Sign the transaction with the wallet
         const signedTransaction = await cardanoWallet.signTx(transactionData, false);
