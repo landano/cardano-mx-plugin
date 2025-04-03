@@ -30,14 +30,19 @@ export async function JS_Wallet_Connect(wallet) {
             throw new Error('Could not enable wallet');
         }
 
-        console.log('Cardano Wallet enabled:', cardanoWallet);
+        console.info('Cardano Wallet enabled:', cardanoWallet);
 
         // Get the network ID
         const networkId = await cardanoWallet.getNetworkId();
-        if (!networkId) {
+        if (networkId === null || networkId === undefined) {
             throw new Error('Could not determine network');
         }
         wallet.set('NetworkID', networkId);
+        if (networkId == 0) {
+            wallet.set('CardanoNetwork', 'Preprod')
+        } else {
+            wallet.set('CardanoNetwork', 'Mainnet')
+        }
         console.log('Network ID:', networkId);
 
         // Get the reward addresses
@@ -50,6 +55,21 @@ export async function JS_Wallet_Connect(wallet) {
         const stakeAddress = rewardAddresses[0];
         wallet.set('StakeAddress', stakeAddress);
         console.log('Stake Address:', stakeAddress);
+
+        // Get base address (first used address, fallback to unused)
+        const usedAddresses = await cardanoWallet.getUsedAddresses();
+        let baseAddress;
+        if (usedAddresses.length > 0) {
+            baseAddress = usedAddresses[0];
+        } else {
+            const unusedAddresses = await cardanoWallet.getUnusedAddresses();
+            if (unusedAddresses.length === 0) {
+                throw new Error('No addresses available in wallet');
+            }
+            baseAddress = unusedAddresses[0];
+        }
+        wallet.set('BaseAddress', baseAddress);
+        console.log('Base Address:', baseAddress);        
 
         return true; // Success
     } catch (error) {
