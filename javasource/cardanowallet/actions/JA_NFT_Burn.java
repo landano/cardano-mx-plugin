@@ -102,7 +102,6 @@ public class JA_NFT_Burn extends CustomJavaAction<java.lang.String>
         String mnemonic = EncryptDecryptMnemonic.decrypt(wallet.getMnemonicEncrypted(), this.Passphrase);
 		Account senderAccount = new Account(utils.getCardanoNetwork(), mnemonic);
 		mnemonic = null;
-		String senderAddress = senderAccount.baseAddress();
 
         // NativeScript from the JSON policy script
         NativeScript nativeScript = NativeScript.deserializeJson(
@@ -128,12 +127,10 @@ public class JA_NFT_Burn extends CustomJavaAction<java.lang.String>
         Result<String> burnResult = quickTxBuilder.compose(burnTx)
                 .withSigner(SignerProviders.signerFrom(senderAccount))
                 .withSigner(SignerProviders.signerFrom(policy))
-                .completeAndWait(System.out::println);
+                .completeAndWait(LOG::debug);
 
-        System.out.println(burnResult);
         return burnResult.getValue();
-//        assertTrue(result.isSuccessful());
-//        waitForTransactionHash(result);              	
+        
 		// END USER CODE
 	}
 
@@ -148,124 +145,6 @@ public class JA_NFT_Burn extends CustomJavaAction<java.lang.String>
 	}
 
 	// BEGIN EXTRA CODE
-    public static ILogNode LOG = Core.getLogger(cardanowallet.proxies.constants.Constants.getLogNodeName());
-    
-    public static NFT generateNFTMetadata(NFT nft, Map<String, Object> properties) {
-    	LOG.debug("NFT Map::::::");
-    	LOG.debug(nft.getMap());
-    	
-        
-        for (Map.Entry<String, Object> entry : properties.entrySet()) {
-            String key = entry.getKey();
-            Object value = entry.getValue();
-            System.out.println("properties Key::"+ key);
-            System.out.println("properties Value::"+ value);
-            
-            if (value instanceof Map) {
-                CBORMetadataMap nestedMap = convertToCBORMetadataMap((Map<String, Object>) value);
-                var nftMap = nft.getMap();
-                nftMap.put(new UnicodeString(key), nestedMap.getMap());
-                
-            } else if (value instanceof List) {
-                CBORMetadataList nestedList = convertToCBORMetadataList((List<Object>) value);
-                var nftMap = nft.getMap();
-                nftMap.put(new UnicodeString(key),nestedList.getArray());
-            } else {
-                nft.property(key, value.toString());
-            }
-        }
-        
-        return nft;
-    }
-
-    private static CBORMetadataMap convertToCBORMetadataMap(Map<String, Object> map) {
-	    CBORMetadataMap cborMap = new CBORMetadataMap();
-	    System.out.println("Map::::::::");
-	    System.out.println(map);
-	    for (Map.Entry<String, Object> entry : map.entrySet()) {
-	        String key = entry.getKey();
-	        Object value = entry.getValue();
-	        if (value instanceof Map) {
-	            cborMap.put(key, convertToCBORMetadataMap((Map<String, Object>) value));
-	        } else if (value instanceof List) {
-	            cborMap.put(key, convertToCBORMetadataList((List<Object>) value));
-	        } else {
-	            cborMap.put(key, value.toString());
-	        }
-	    }
-	    return cborMap;
-	}
-    
-    private static CBORMetadataList convertToCBORMetadataList(List<Object> list) {
-	    CBORMetadataList cborList = new CBORMetadataList();
-	    System.out.println("List::::::::");
-	    System.out.println(list);
-	    for (Object item : list) {
-	        if (item instanceof Map) {
-	            cborList.add(convertToCBORMetadataMap((Map<String, Object>) item));
-	        } else if (item instanceof List) {
-	            cborList.add(convertToCBORMetadataList((List<Object>) item));
-	        } else {
-	        	System.out.println("LISTITEM TYPE::::" + item.getClass().toString());
-	            cborList.add(item.toString());
-	        }
-	    }
-	    return cborList;
-	}
-    
-    public static Map<String, Object> createPropertiesFromJsonString(String jsonString) throws Exception {
-    	System.out.println(jsonString);
-        ObjectMapper mapper = new ObjectMapper();
-        JsonNode rootNode = mapper.readTree(jsonString);
-        System.out.println(rootNode);
-        
-        return convertJsonNodeToMap(rootNode);
-    }
-
-    private static Map<String, Object> convertJsonNodeToMap(JsonNode node) {
-        Map<String, Object> map = new HashMap<>();
-        
-        node.fields().forEachRemaining(entry -> {
-            String key = entry.getKey();
-            JsonNode value = entry.getValue();
-            System.out.println("Key:::"+key);
-            System.out.println("Value::"+value);
-            
-            if (value.isObject()) {
-                map.put(key, convertJsonNodeToMap(value));
-            } else if (value.isArray()) {
-                map.put(key, convertJsonNodeToList(value));
-            } else if (value.isNumber()) {
-                map.put(key, value.numberValue());
-            } else if (value.isBoolean()) {
-                map.put(key, value.booleanValue());
-            } else {
-                map.put(key, value.asText());
-            }
-        });
-        
-        return map;
-    }
-
-    private static List<Object> convertJsonNodeToList(JsonNode node) {
-        List<Object> list = new ArrayList<>();
-        
-        for (JsonNode element : node) {
-            if (element.isObject()) {
-                list.add(convertJsonNodeToMap(element));
-            } else if (element.isArray()) {
-                list.add(convertJsonNodeToList(element));
-            } else if (element.isNumber()) {
-                list.add(element.numberValue());
-            } else if (element.isBoolean()) {
-                list.add(element.booleanValue());
-            } else {
-                list.add(element.asText());
-            }
-        }
-        
-        return list;
-    }
-    
+    public static ILogNode LOG = Utils.LOG;
 	// END EXTRA CODE
 }
