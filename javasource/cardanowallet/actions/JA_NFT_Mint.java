@@ -162,12 +162,12 @@ public class JA_NFT_Mint extends CustomJavaAction<java.lang.String>
         	LOG.error("An asset should be either NFT or FT");
         }
 
-//		RecipientNP recipient = TransactionNP.getTransactionNP_RecipientNP_Single();
+		RecipientNP recipient = TransactionNP.getTransactionNP_RecipientNP_Single();
 		
 		
 		// Build the transaction
         Tx tx = new Tx()
-                .mintAssets(nativeScript, asset, senderAddress)
+                .mintAssets(nativeScript, asset, recipient.getAddress())
                 .attachMetadata(metadata)
                 .from(senderAddress);        
         
