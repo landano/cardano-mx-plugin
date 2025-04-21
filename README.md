@@ -2,86 +2,135 @@
 
 ## Overview
 
-The **Cardano Mendix Plugin** integrates the Cardano blockchain with the Mendix low-code platform, enabling developers to build decentralized applications (dApps) on the Cardano network directly within Mendix. This plugin provides a seamless way to interact with Cardano smart contracts, manage transactions, and handle blockchain data.
+The **Cardano Mendix Plugin** is a powerful bridge between the Mendix low-code platform and the Cardano blockchain. Developed by [Landano](https://landano.io), this plugin empowers Mendix developers to build decentralized applications (dApps) that support Cardano-native features like wallet creation, ADA transactions, NFT minting, metadata attachment, and smart contract interaction — all without leaving the Mendix ecosystem.
+
+The plugin is fully open-source and packaged as a set of Mendix modules with Java and JavaScript actions. It supports both custodial and browser-based wallets and uses [Blockfrost](https://blockfrost.io) as its backend.
+
+---
 
 ## Features
 
-### Initial Prototype
-- **Secure Integration:** Leverage the security and scalability of the Cardano blockchain in your Mendix applications.
-- **Wallet creation:** Create 
-- **Transaction Management:** Create, sign, and submit transactions on the Cardano network.
-- **Blockchain Data Access:** Retrieve information from the Cardano blockchain, such as block data, transaction history, and more.
-- **Adding Metadata to Transactions:** Attach metadata to transactions to include additional information that can be stored and retrieved from the blockchain.
+### ✅ Core Capabilities
+- 🔐 Wallet creation and restoration (with secure mnemonic encryption)
+- 💸 Send ADA with or without metadata
+- 🔄 Multi-signature transactions (native scripts)
+- 🧠 Smart contract support (lock/unlock flows)
+- 🖼️ Mint and burn native NFTs with optional IPFS metadata (via Pinata)
+- 🔗 Browser wallet connection (CIP-30: Nami, Eternl, etc.)
 
-### Milestone 4 release
-- **Support for Multi-Sig Transactions:** Create and manage multi-signature transactions, ensuring that multiple parties authorize a transaction before it is processed.
-- **Smart Contract Interaction:** Execute and interact with smart contracts on the Cardano blockchain.
+### 📦 Included Modules
+- `CardanoWallet`: Core plugin logic and blockchain flows
+- `Blockfrost`: API integration for submitting and querying the blockchain
+- `PinataIPFS`: Optional module to upload media to IPFS for NFT metadata
 
-### Roadmap for April
-- **Creation of Native Tokens:** Mint and manage native tokens on the Cardano blockchain, enabling custom assets within your Mendix applications.
+---
 
 ## Prerequisites
 
-Before you can use the Cardano Mendix Plugin, ensure that you have the following:
+To get started, you’ll need:
 
-- Mendix Studio Pro installed.
-- A Mendix project where the plugin will be integrated.
-- Access to a Cardano node or a Cardano API service (e.g., Blockfrost).
+- Mendix Studio Pro 10.x
+- Java 11+
+- A [Blockfrost](https://blockfrost.io) API key (for testnet or mainnet)
+- Optional: A [Pinata](https://pinata.cloud) API key if you're using IPFS for NFTs
+
+⚠️ The plugin **does not currently support connecting to your own Cardano node** — Blockfrost is required for all blockchain operations.
+
+---
 
 ## Installation
 
-1. **Download the Plugin:**
-   - Clone or download the repository from GitHub.
+1. **Clone the Repository:**
 
 ```bash
-git clone https://github.com/yourusername/Cardano-Mendix-Plugin.git
+git clone https://github.com/landano/cardano-mendix-plugin.git
 ```
 
-2. **Add to Mendix Project:**
-   - Open your Mendix project in Mendix Studio Pro.
-   - Import the downloaded plugin into your project.
+2. **Import into Mendix:**
+   - Open your Mendix project in Studio Pro.
+   - Import the `.mpk` modules in this order:
+     1. `CardanoWallet`
+     2. `Blockfrost`
+     3. `PinataIPFS` *(optional)*
 
-3. **Configure Plugin:**
-   - Navigate to the plugin settings in Mendix and configure the Cardano node or API endpoint.
-   - Set up necessary credentials and access tokens.
+3. **Configure Blockfrost API:**
+   - Add your API key to the appropriate constant or configuration entity.
+   - Choose the correct network (e.g. `Preprod`, `Mainnet`).
+
+---
 
 ## Usage
-### Create a wallet in the system
-You have two options. You can either restore an existing wallet using the mnemonic that you have safely stored previously or you can go ahead and create a wallet from scratch. For the lather you'll be presented with a fresh mnemonic phrase.
 
-### Managing Transactions
-You can create a transaction by clicking the create transaction button in the transaction section of the wallet overview. You'll be presented by a 4 step workflow that will guide you through the process:
+The fastest way to explore the plugin is to open the **example project** included in this repository. It includes a fully functional UI and prebuilt flows.
 
-1. **Type of transaction:**
-   - Simple
+### Wallet Management
+
+You can:
+- **Create a new wallet** with a secure passphrase and generated mnemonic
+- **Restore an existing wallet** using a 15-word phrase
+
+All mnemonics are encrypted in the Mendix database using a passphrase + key setup.
+
+### Transaction Workflow
+
+The transaction process is broken into 4 user-friendly steps:
+
+1. **Choose type:**
+   - Simple ADA transaction
+   - Metadata transaction
+   - NFT minting
    - Multi-sig
-   - Metadata
-   - NFT
-   - Smart Contract
+   - Smart contract lock/unlock
 
-2. **Transaction details:**
-   - Fill in the necessary details of the transaction
+2. **Enter transaction details**
 
-3. **Verify the Transaction:**
-   - Verify the details entered in the previous step
-  
-4. **Confirm the Transaction:**
-   - Confirm the transaction with your passphrase 
+3. **Verify the transaction**
+
+4. **Confirm and submit with passphrase**
+
+### NFT Minting
+
+The plugin supports:
+- One-click NFT minting with a metadata form
+- Optional IPFS image or metadata pinning using the `PinataIPFS` module
+
+### Browser Wallets (Web Only)
+
+You can connect to wallets like **Lace** or **Eternl** in the browser using:
+- `JS_Wallet_Connect`
+- `JS_GetUsedCardanoWalletAddresses`
+- `JS_GetCardanoWalletRewardAddresses`
+
+---
+
+## Documentation
+
+You can find full documentation, guides, and developer references at:
+
+👉 [https://docs.landano.io/plugin](https://docs.landano.io/plugin)
+
+---
 
 ## Contributing
 
-Contributions are welcome! If you'd like to contribute to the project, please follow these steps:
+We welcome contributions from the Mendix and Cardano communities!
 
-1. Fork the repository.
-2. Create a new branch (`git checkout -b feature-branch-name`).
-3. Make your changes and commit them (`git commit -m 'Add new feature'`).
-4. Push to the branch (`git push origin feature-branch-name`).
-5. Create a Pull Request.
+1. Fork the repository
+2. Create a feature branch
+3. Submit a pull request with a clear description
+
+For larger changes, please open an issue first to discuss your idea.
+
+---
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT License — see the [LICENSE](LICENSE) file.
+
+---
 
 ## Contact
 
-For questions, feedback, or support, please open an issue in the repository or contact us using the form on our website at https://www.landano.io/contact
+- Website: [https://www.landano.io](https://www.landano.io)
+- GitHub Issues: [https://github.com/landano/cardano-mendix-plugin/issues](https://github.com/landano/cardano-mendix-plugin/issues)
+- Email: support@landano.io
