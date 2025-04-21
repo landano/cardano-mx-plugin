@@ -38,6 +38,18 @@ public class Utils extends BaseUtils {
         initializeServices();
     }
 	
+	public static Integer NetworkEnumToInt(cardanowallet.proxies.Enum_CardanoNetwork network) {
+		switch (network) {
+		case Mainnet:
+			return 1;
+		case Preprod:
+			return 0;
+		case Preview:
+			return 0;
+		default:
+			return 1;
+		}
+	}
 	
 	private void assignNetwork(String networkString) {
 		networkString = networkString == null? "": networkString;

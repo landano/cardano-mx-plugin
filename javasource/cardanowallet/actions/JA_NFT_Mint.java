@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import com.bloxbean.cardano.client.account.Account;
 import com.bloxbean.cardano.client.api.model.Result;
 import com.bloxbean.cardano.client.backend.blockfrost.common.Constants;
@@ -24,6 +25,8 @@ import com.bloxbean.cardano.client.cip.cip25.NFTMetadata;
 import com.bloxbean.cardano.client.crypto.SecretKey;
 import com.bloxbean.cardano.client.crypto.bip32.key.HdPrivateKey;
 import com.bloxbean.cardano.client.function.helper.SignerProviders;
+import com.bloxbean.cardano.client.metadata.Metadata;
+import com.bloxbean.cardano.client.metadata.cbor.CBORMetadata;
 import com.bloxbean.cardano.client.metadata.cbor.CBORMetadataList;
 import com.bloxbean.cardano.client.metadata.cbor.CBORMetadataMap;
 import com.bloxbean.cardano.client.quicktx.QuickTxBuilder;
@@ -44,6 +47,7 @@ import cardanowallet.Utils;
 import cardanowallet.proxies.NFTFileNP;
 import cardanowallet.proxies.NFTNP;
 import cardanowallet.proxies.RecipientNP;
+import cardanowallet.proxies.TokenType;
 import cardanowallet.proxies.Wallet;
 import co.nstant.in.cbor.model.UnicodeString;
 
@@ -94,57 +98,77 @@ public class JA_NFT_Mint extends CustomJavaAction<java.lang.String>
         SecretKey secretKey = SecretKey.create(hdPrivateKey.getKeyData());
         Policy policy = new Policy(nativeScript)
         		.addKey(secretKey);
+        Metadata metadata = null;
         // String scriptAddress = this.TransactionNP.getTransactionNP_Policy().getAddress();
 
         
         // Build the NFT meta data
         NFTNP nftNP = TransactionNP.getTransactionNP_NFTNP();
+        Integer quantityOfTokens = Objects.requireNonNullElse(nftNP.getQuantity(), 1) ;
         
-        Asset asset = new Asset(nftNP.getName(), BigInteger.valueOf(1));
-        NFT nft = NFT.create()
-        		.assetName(asset.getName())
-        		.name(nftNP.getName())
-        		.image(nftNP.getImageURL())
-        		.description(nftNP.getDescription());
-        
-        String stringMetadata = nftNP.getMetadataJSON();
-        if((stringMetadata != null && !stringMetadata.isEmpty()) && !stringMetadata.startsWith("{")) {
-        	stringMetadata = "{"+stringMetadata+"}";
+        Asset asset = new Asset(nftNP.getName(), BigInteger.valueOf(quantityOfTokens));
+        if(TokenType.NFT.equals(nftNP.getTokenType())) {
+	        NFT nft = NFT.create()
+	        		.assetName(asset.getName())
+	        		.name(nftNP.getName())
+	        		.image(nftNP.getImageURL())
+	        		.description(nftNP.getDescription());
+	        
+	        String stringMetadata = nftNP.getMetadataJSON();
+	        if((stringMetadata != null && !stringMetadata.isEmpty()) && !stringMetadata.startsWith("{")) {
+	        	stringMetadata = "{"+stringMetadata+"}";
+	        }
+			try {
+	            Map<String, Object> properties = createPropertiesFromJsonString(stringMetadata);
+	
+	            // Now you can use this properties map to generate NFT metadata
+	            generateNFTMetadata(nft, properties);
+	            
+	            List<IMendixObject> nftFiles = Core.retrieveByPath(
+	                    getContext(),
+	                    nftNP.getMendixObject(),
+	                    NFTFileNP.MemberNames.NFTFileNP_NFTNP.toString()
+	                );
+	
+	            for (IMendixObject nftNPobj : nftFiles) {
+	            	NFTFileNP nftFileNP = NFTFileNP.initialize(getContext(), nftNPobj);
+	            	nft.addFile(NFTFile.create()
+	            			.name(nftFileNP.getName())
+	            			.mediaType(nftFileNP.getMediaType())
+	            			.src(nftFileNP.getSourceUrl())
+	            	);
+	            }
+	        } catch (Exception e) { 
+	            e.printStackTrace(); 
+	        }
+	
+			metadata = NFTMetadata.create()
+	                .addNFT(nativeScript.getPolicyId(), nft);
+        } else if(TokenType.FT.equals(nftNP.getTokenType())){
+        	CBORMetadataMap tokenInfoMap = new CBORMetadataMap()
+	            .put("token", nftNP.getName())
+	            .put("ticker", nftNP.getTicker())
+	            .put("decimals", BigInteger.valueOf(nftNP.getDecimals()));
+
+		    /*CBORMetadataList tagList
+		            = new CBORMetadataList()
+		            .add("tag1")
+		            .add("tag2");*/
+		
+		    metadata = new CBORMetadata()
+		            .put(new BigInteger("670001"), tokenInfoMap); // CIP-68 
+		    	// .put(new BigInteger("670002"), tagList); // CIP-68
+        } else {
+        	LOG.error("An asset should be either NFT or FT");
         }
-		try {
-            Map<String, Object> properties = createPropertiesFromJsonString(stringMetadata);
-
-            // Now you can use this properties map to generate NFT metadata
-            generateNFTMetadata(nft, properties);
-            
-            List<IMendixObject> nftFiles = Core.retrieveByPath(
-                    getContext(),
-                    nftNP.getMendixObject(),
-                    NFTFileNP.MemberNames.NFTFileNP_NFTNP.toString()
-                );
-
-            for (IMendixObject nftNPobj : nftFiles) {
-            	NFTFileNP nftFileNP = NFTFileNP.initialize(getContext(), nftNPobj);
-            	nft.addFile(NFTFile.create()
-            			.name(nftFileNP.getName())
-            			.mediaType(nftFileNP.getMediaType())
-            			.src(nftFileNP.getSourceUrl())
-            	);
-            }
-        } catch (Exception e) { 
-            e.printStackTrace(); 
-        }
-
-		NFTMetadata nftMetadata = NFTMetadata.create()
-                .addNFT(nativeScript.getPolicyId(), nft);
 
 		RecipientNP recipient = TransactionNP.getTransactionNP_RecipientNP_Single();
 		
 		
 		// Build the transaction
         Tx tx = new Tx()
-                .mintAssets(nativeScript, asset, senderAddress)
-                .attachMetadata(nftMetadata)
+                .mintAssets(nativeScript, asset, recipient.getAddress())
+                .attachMetadata(metadata)
                 .from(senderAddress);        
         
         // Compose, sign and submit the transaction
