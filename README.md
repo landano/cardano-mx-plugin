@@ -107,7 +107,7 @@ You can connect to wallets like **Lace** or **Eternl** in the browser using:
 
 You can find full documentation, guides, and developer references at:
 
-👉 [https://docs.landano.io/plugin](https://docs.landano.io/plugin)
+👉 [https://docs.landano.io/d/cardano-mendix-plugin](https://docs.landano.io/d/cardano-mendix-plugin)
 
 ---
 
@@ -134,3 +134,6 @@ MIT License — see the [LICENSE](LICENSE) file.
 - Website: [https://www.landano.io](https://www.landano.io)
 - GitHub Issues: [https://github.com/landano/cardano-mendix-plugin/issues](https://github.com/landano/cardano-mendix-plugin/issues)
 - Email: support@landano.io
+
+## Acknowledgements
+The Landano team thanks the [Bloxbean](https://www.bloxbean.com/) team for their support. Without the [cardano-client-lib](https://github.com/bloxbean/cardano-client-lib) we wouldn't have been able to build the Cardano Mendix Plugin.
